@@ -19,7 +19,7 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) { 
     return FlutterMap( 
       mapController: controller, 
-      options: MapOptions( 
+      options: MapOptions(
         initialCenter: latLng, 
         initialZoom: 18, 
       ), 

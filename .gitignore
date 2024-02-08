@@ -21,7 +21,7 @@ migrate_working_dir/
 # is commented out by default.
 .vscode/
 
-# API keys should NEVER be committed
+# API keys should NEVER be committed.
 api-keys.json
 
 # Flutter/Dart/Pub related
