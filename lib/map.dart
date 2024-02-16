@@ -21,26 +21,13 @@ class _MapScreenState extends State<MapScreen> {
       mapController: controller, 
       options: MapOptions(
         initialCenter: latLng, 
-        initialZoom: 18, 
+        initialZoom: 18,
+        minZoom: 6,
+        maxZoom: 24,
       ), 
       children: [
         TileLayer(
           urlTemplate: const String.fromEnvironment('PUBLIC_API_KEY')
-        ), 
-        MarkerLayer( 
-          markers: [ 
-            Marker( 
-              point: latLng, 
-              width: 60, 
-              height: 60, 
-              alignment: Alignment.topCenter, 
-              child: Icon( 
-                Icons.location_pin, 
-                color: Colors.red.shade700, 
-                size: 60, 
-              ), 
-            ), 
-          ], 
         ),
       ], 
     ); 

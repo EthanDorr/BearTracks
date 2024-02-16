@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override 
   Widget build(BuildContext context) { 
     return const MaterialApp( 
-      title: "Maps", 
+      title: "Bear Tracks", 
       debugShowCheckedModeBanner: false, 
       home: MapScreen(), 
     ); 
