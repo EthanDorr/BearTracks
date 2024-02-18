@@ -24,6 +24,8 @@ migrate_working_dir/
 # API keys should NEVER be committed.
 api-keys.json
 
+assets/
+
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
