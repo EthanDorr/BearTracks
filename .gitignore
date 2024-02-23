@@ -24,6 +24,11 @@ migrate_working_dir/
 # API keys should NEVER be committed.
 api-keys.json
 
+# Assets folder not necessary to commit directly (for now)
+assets/
+# Backups folder only needed on local machine
+backups/
+
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id

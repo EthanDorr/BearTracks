@@ -1,4 +1,4 @@
-# bear_tracks
+# Bear Tracks
 
 A new Flutter project.
 
