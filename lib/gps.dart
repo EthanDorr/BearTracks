@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -11,7 +12,7 @@ import 'package:bear_tracks/globals.dart';
 class GPS {
   final LocationSettings _locationSettings = const LocationSettings(
     accuracy: LocationAccuracy.best,
-    distanceFilter: 5,
+    distanceFilter: 1,
   );
 
   LatLng? _latlng;
@@ -21,61 +22,48 @@ class GPS {
   StreamSubscription<ServiceStatus>? _serviceStatusStreamSubscription;
   Stream<Position>? _positionStream;
   StreamSubscription<Position>? _positionStreamSubscription;
-  final StreamController<ServiceStatus> _serviceStatusStreamController = StreamController<ServiceStatus>();
-  final StreamController<Position> _positionStreamController = StreamController<Position>.broadcast();
 
   LatLng? get latlng => _latlng;
-  Position? get position => _position;
   ServiceStatus get serviceStatus => _serviceStatus ?? ServiceStatus.disabled;
-  Stream<ServiceStatus>? get serviceStatusStream => _serviceStatusStreamController.stream;
+  Stream<ServiceStatus>? get serviceStatusStream => _serviceStatusStream;
   StreamSubscription<ServiceStatus>? get serviceStatusStreamSubscription => _serviceStatusStreamSubscription;
-  Stream<Position>? get positionStream => _positionStreamController.stream;
+  Stream<Position>? get positionStream => _positionStream;
   StreamSubscription<Position>? get positionStreamSubscription => _positionStreamSubscription;  
   Future<LatLng?> get currentLatLng async => toLatLng(await getCurrentPositionGL());
   Future<LatLng?> get lastKnownLatLng async => toLatLng(await getLastKnownPositionGL());
-
-  GPS() {
-    _initializeGL();
-  }
 
   // Initialize the GPS
   // First manually check if location services are enabled. This is so the map can build correctly as soon as possible.
   // Then, only if location permissions are given, do we start the service and position streams.
   // This is because the service stream controls the position stream, i.e., turns it on/off with location.
-  Future<void> _initializeGL() async {
-    _serviceStatus = await Geolocator.isLocationServiceEnabled()? ServiceStatus.enabled : ServiceStatus.disabled;
-    _serviceStatusStreamController.sink.add(_serviceStatus ?? ServiceStatus.disabled);
+  Future<void> init() async {
     if (await requestLocationPermissionGL()) {
-      startServiceStream();
+      await startServiceStream();
       startPositionStream();
     }
   }
 
   // Save the current location, then stop both the service and position streams.
   void dispose() {
-    _savePosition(position);
+    _savePosition(_position);
     stopServiceStream();
     stopPositionStream();
   }
 
   void debug() {
-    log('LatLng: $latlng\n'
-        'Position: $position\n' 
-        'ServiceStatus: $serviceStatus\n'
+    log('LatLng: $_latlng\n'
+        'Position: $_position\n'
+        'ServiceStatus: $_serviceStatus\n'
         'ServiceStream: ${serviceStatusStreamSubscription != null}\n'
         'PositionStream: ${_positionStreamSubscription != null}\n'
     );
   }
 
-  void startServiceStream() async {
+  Future<void> startServiceStream() async {
+    _serviceStatus = await Geolocator.isLocationServiceEnabled()? ServiceStatus.enabled : ServiceStatus.disabled;
     _serviceStatusStream ??= Geolocator.getServiceStatusStream();
-    _serviceStatusStream?.first.then((ServiceStatus status) {
-      _serviceStatusStreamController.add(status);
-    });
-
     _serviceStatusStreamSubscription ??= _serviceStatusStream
       ?.listen((ServiceStatus status) {
-        _serviceStatusStreamController.add(status);
         _serviceStatus = status;
         (_serviceStatus == ServiceStatus.enabled)
           ? startPositionStream()
@@ -91,28 +79,29 @@ class GPS {
     _serviceStatusStreamSubscription = null;
   }
 
-  void startPositionStream() async {
+  Future<void> startPositionStream() async {
     try {
       if (!await isServiceStatusAndPermissionsEnabledGL()) return;
 
-      _positionStream ??= Geolocator.getPositionStream(locationSettings: _locationSettings).asBroadcastStream();
-      _positionStream?.first.then((Position position) {
-        _positionStreamController.add(position);
-      });
+      // Initialize position and latlng
+      _position = await Geolocator.getCurrentPosition();
+      _latlng = toLatLng(_position);
+
+      _positionStream ??= Geolocator.getPositionStream(
+        locationSettings: _locationSettings
+      // TODO: Is this needed?
+      ).asBroadcastStream();
 
       _positionStreamSubscription ??= _positionStream
-        ?.listen((Position position) {
-          _positionStreamController.add(position);
-          _position = position;
-          _latlng = toLatLng(position);
-          _savePosition(position);
+        ?.listen((Position pos) {
+          _position = pos;
+          _latlng = toLatLng(pos);
+          _savePosition(pos);
         }, onError: (e, stackTrace) {
           log('Error during position stream: $e\n$stackTrace');
           stopPositionStream();
         },
         cancelOnError: true);
-      _position = await Geolocator.getCurrentPosition();
-      _latlng = toLatLng(_position);
     } catch (e, stackTrace) {
       log('Error starting position stream! (The user was probably fiddling with location.)\n'
           '$e\n$stackTrace');
@@ -128,7 +117,7 @@ class GPS {
   }
 
   LatLng getInitialLatLng() {
-    LatLng initialLatLng = latlng ?? _loadLatLng() ?? mercerLatLng;
+    LatLng initialLatLng = _latlng ?? _loadLatLng() ?? mercerCenter;
     _latlng = initialLatLng;
     return initialLatLng;  
   }
@@ -236,5 +225,40 @@ class GPS {
     scaffoldKey.currentState?.showSnackBar(
       SnackBar(content: Text(message))
     );
+  }
+}
+
+
+class CurrentLocationMarker extends StatefulWidget {
+  final bool isLocationEnabled;
+  final Stream<Position?>? positionStream;
+
+  const CurrentLocationMarker({
+    super.key, 
+    required this.isLocationEnabled,
+    required this.positionStream,
+  });
+
+  @override
+  State<CurrentLocationMarker> createState() => _CurrentLocationMarkerState();
+}
+
+class _CurrentLocationMarkerState extends State<CurrentLocationMarker> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const factory = LocationMarkerDataStreamFactory();
+    return widget.isLocationEnabled
+      ? CurrentLocationLayer(
+          positionStream: factory.fromGeolocatorPositionStream(
+            stream: widget.positionStream,
+          ),
+          alignPositionOnUpdate: AlignOnUpdate.never,
+        )
+      : const SizedBox.shrink();
   }
 }

@@ -1,17 +1,16 @@
-import 'package:bear_tracks/globals.dart';
-import 'package:bear_tracks/map.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-void main() async {
-  await initHive();
-  runApp(const BearTracks());
-}
+import 'package:bear_tracks/globals.dart';
+import 'package:bear_tracks/map.dart';
 
-Future<void> initHive() async {
+void main() async {
+  // TODO: Check if this is necessary
+  WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   await Hive.openBox('lastKnownLocation');
+  runApp(const BearTracks());
 }
 
 class BearTracks extends StatelessWidget {
@@ -19,12 +18,19 @@ class BearTracks extends StatelessWidget {
   
   @override 
   Widget build(BuildContext context) {
-    // Hide the status bar
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive, overlays: [SystemUiOverlay.bottom]);
+    // Dark theme FTW
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+    // Hide the status bar
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [SystemUiOverlay.bottom]);
+    // I said hide it, damnit!
+    SystemChrome.setSystemUIChangeCallback((systemOverlaysAreVisible) async {
+      if (systemOverlaysAreVisible) {
+        await Future.delayed(const Duration(seconds: 3), SystemChrome.restoreSystemUIOverlays);
+      }
+    });
 
     return MaterialApp(
-      title: 'Bear Tracks', 
+      title: 'BearTracks', 
       home: const MapScreen(),
       scaffoldMessengerKey: scaffoldKey,
     ); 
