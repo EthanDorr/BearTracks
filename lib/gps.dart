@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 
 import 'package:geolocator/geolocator.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:bear_tracks/globals.dart';
 
@@ -22,6 +22,7 @@ class GPS {
   StreamSubscription<ServiceStatus>? _serviceStatusStreamSubscription;
   Stream<Position>? _positionStream;
   StreamSubscription<Position>? _positionStreamSubscription;
+  late SharedPreferences _prefs;
 
   LatLng? get latlng => _latlng;
   ServiceStatus get serviceStatus => _serviceStatus ?? ServiceStatus.disabled;
@@ -37,6 +38,8 @@ class GPS {
   // Then, only if location permissions are given, do we start the service and position streams.
   // This is because the service stream controls the position stream, i.e., turns it on/off with location.
   Future<void> init() async {
+    //initHive();
+    _prefs = await SharedPreferences.getInstance();
     if (await requestLocationPermissionGL()) {
       await startServiceStream();
       startPositionStream();
@@ -193,13 +196,8 @@ class GPS {
 
   // Load the user's saved position from disk.
   LatLng? _loadLatLng() {
-    // Fetch saved location from disk
-    Box box = Hive.box('lastKnownLocation');
-    String? latitudeStr = box.get('latitude'), longitudeStr = box.get('longitude');
-    // Parse strings ensuring nulls are not present. This is only needed for first time setup.
-    if (latitudeStr == null || longitudeStr == null) return null;
-    double latitude = double.parse(latitudeStr), longitude = double.parse(longitudeStr);
-    // Construct as LatLng (no way or reason to construct as Position)
+    final double? latitude = _prefs.getDouble('latitude'), longitude = _prefs.getDouble('longitude');
+    if (latitude == null || longitude == null) return null;
     return LatLng(latitude, longitude);
   }
 
@@ -207,10 +205,8 @@ class GPS {
   void _savePosition(Position? position) {
     // Do not save null positions to disk.
     if (position == null) return;
-    // Save latitude/longitude to disk (only need these)
-    Box box = Hive.box('lastKnownLocation');
-    box.put('latitude', '${position.latitude}');
-    box.put('longitude', '${position.longitude}');
+    _prefs.setDouble('latitude', position.latitude);
+    _prefs.setDouble('longitude', position.longitude);
   }
 
   // Helper function for converting a Position to a LatLng

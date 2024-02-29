@@ -23,11 +23,12 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
-  late final AnimatedMapController controller = AnimatedMapController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
+  late final AnimatedMapController _controller = AnimatedMapController(
+    vsync: this,
+    duration: const Duration(milliseconds: 500),
+    curve: Curves.easeInOut,
   );
+  bool isMapReady = false;
   Style? _style;
   bool isLocationEnabled = false;
   GPS gps = GPS();
@@ -38,13 +39,16 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _initGPS();
+    WidgetsFlutterBinding.ensureInitialized();
     _initStyle();
   }
-  // Initialize 
+
+  // Initialize style
   Future<void> _initStyle() async {
     _style = await _readStyle();
     setState(() {});
   }
+  
   // Initialize GPS and create a location stream for the CurrentLocationMarker
   Future<void> _initGPS() async {
     await gps.init();
@@ -61,12 +65,13 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     gps.dispose();
-    controller.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    log('Building...');
     if (_style == null) {
       return const Center(
         child: CircularProgressIndicator(
@@ -75,6 +80,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         ),
       );
     }
+    log('got here');
+    Widget map = _map(_style!);
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -87,18 +94,18 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _debugStats(controller.mapController)
+                    _debugStats(_controller.mapController)
                   ],
                 ),
               ),
             Flexible(
-              child: _map(_style!),
+              child: map,
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _recenterUserOnMap(),
+        onPressed: () => _recenterUserOnMap(_controller),
         child: isLocationEnabled
           ? const Icon(Icons.my_location_sharp)
           : const Icon(Icons.location_disabled)
@@ -112,11 +119,16 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       initialZoom: 18.0,
       minZoom: 17.0,
       maxZoom: 19.0,
+      onMapReady: () {
+        setState(() {
+          isMapReady = true;
+        });
+      }
     );
 
     log('Building map...');
     return FlutterMap(
-      mapController: controller.mapController,
+      mapController: _controller.mapController,
       options: mapOptions,
       children: [
         // TODO: Play with style
@@ -127,7 +139,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           tileOffset: TileOffset.mapbox,
           fileCacheTtl: const Duration(days: 2), // TODO: Increase in prod
           logCacheStats: true,
-          //layerMode: VectorTileLayerMode.vector,
+          layerMode: VectorTileLayerMode.vector,
           maximumZoom: mapOptions.maxZoom,
           cacheFolder: _getTempDirectory, // TODO: Check this is a good location
         ),
@@ -148,7 +160,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _debugStats(MapController controller) {
+  Widget _debugStats(MapController mapController) {
     TextStyle debugTextStyle = const TextStyle(
       backgroundColor: mercerDarkGray,
       color: mercerLighterGray,
@@ -159,19 +171,19 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         bottom: 12,
       ),
       child: StreamBuilder(
-        stream: controller.mapEventStream,
+        stream: mapController.mapEventStream,
         builder: (context, snapshot) {
-          return (snapshot.connectionState == ConnectionState.done)
-            ? Text( // Ugly ugly ugly
-                'Zoom: ${controller.camera.zoom.toStringAsFixed(2)}      '
-                'LatLng: ${controller.camera.center.latitude.toStringAsFixed(4)}, '
-                        '${controller.camera.center.longitude.toStringAsFixed(4)}',
+          return (isMapReady)
+            ? Text(
+                'Zoom: ${mapController.camera.zoom.toStringAsFixed(2)}      '
+                'LatLng: ${mapController.camera.center.latitude.toStringAsFixed(4)}, '
+                        '${mapController.camera.center.longitude.toStringAsFixed(4)}',
                 style: debugTextStyle,
               )
             : Text(
-                'Loading debug stats...',
-                style: debugTextStyle,
-              );
+              'Loading debug stats...',
+              style: debugTextStyle,
+            );
         }
       )
     );
@@ -189,7 +201,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     return cacheDirectory;
   }
 
-  void _recenterUserOnMap() async {
+  void _recenterUserOnMap(AnimatedMapController controller) async {
     if (await gps.isServiceStatusAndPermissionsEnabledGL(request: true)) {
       controller.centerOnPoint(gps.latlng ?? controller.mapController.camera.center);
     }
