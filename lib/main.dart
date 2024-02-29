@@ -1,19 +1,33 @@
-import 'package:flutter/material.dart'; 
-import 'package:bear_tracks/map.dart'; 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-void main() { 
-runApp(const MyApp()); 
-} 
+import 'package:bear_tracks/globals.dart';
+import 'package:bear_tracks/map.dart';
 
-class MyApp extends StatelessWidget { 
-const MyApp({super.key}); 
+void main() {
+  runApp(const BearTracks());
+}
 
-@override 
-Widget build(BuildContext context) { 
-	return const MaterialApp( 
-	title: "Maps", 
-	debugShowCheckedModeBanner: false, 
-	home: MapScreen(), 
-	); 
-} 
+class BearTracks extends StatelessWidget {
+  const BearTracks({super.key});
+  
+  @override 
+  Widget build(BuildContext context) {
+    // Dark theme FTW
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+    // Hide the status bar
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [SystemUiOverlay.bottom]);
+    // I said hide it, dammit!
+    SystemChrome.setSystemUIChangeCallback((systemOverlaysAreVisible) async {
+      if (systemOverlaysAreVisible) {
+        await Future.delayed(const Duration(seconds: 3), SystemChrome.restoreSystemUIOverlays);
+      }
+    });
+
+    return MaterialApp(
+      title: 'BearTracks', 
+      home: const MapScreen(),
+      scaffoldMessengerKey: scaffoldKey,
+    ); 
+  } 
 }
