@@ -1,46 +1,32 @@
-import 'package:bear_tracks/map.dart';
 import 'package:flutter/material.dart'; 
+import 'login/loginscreen.dart'; // Import the LoginScreen class
 
-void main() { 
-runApp(const MyApp()); 
-} 
+//firebase 
+/*
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; */
 
-class MyApp extends StatelessWidget { 
-const MyApp({super.key}); 
-
-@override 
-Widget build(BuildContext context) { 
-	return const MaterialApp( 
-	title: "Maps", 
-	debugShowCheckedModeBanner: false, 
-	home: MapScreen(), 
-	); 
+void main() async {
+  /*
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  ); */
+  runApp(const MyApp());
 }
 
+class MyApp extends StatelessWidget { 
+  const MyApp({Key? key}) : super(key: key); // Add a key parameter
+
   @override
-  Widget search(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-          child: TextField(
-            decoration: InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: 'Enter a search term',
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-          child: TextFormField(
-            decoration: const InputDecoration(
-              border: UnderlineInputBorder(),
-              labelText: 'Enter your username',
-            ),
-          ),
-        ),
-      ],
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'My App',
+      debugShowCheckedModeBanner: false,
+      home: const LoginScreen(), // Set LoginScreen as the default screen
+      routes: {
+        '/login': (context) => const LoginScreen(), // Add route to LoginScreen
+      },
     );
   }
 }

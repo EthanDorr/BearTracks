@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "467803037500",
+    "project_id": "mercer-app",
+    "storage_bucket": "mercer-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:467803037500:android:22165a7c47868c8e240839",
+        "android_client_info": {
+          "package_name": "com.example.bear_tracks"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAl9OQ-A8ouQSokbPabgjWN9ctjS2IDUWc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
