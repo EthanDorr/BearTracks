@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'loginscreen.dart';
+import 'accontLogic.dart';
 
 class createAccount extends StatelessWidget {
   const createAccount({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    TextEditingController loginController = TextEditingController();
+    TextEditingController passwordController = TextEditingController();
+
     return Scaffold(
       backgroundColor: const Color.fromRGBO(34, 34, 34, 1), // Set background color to gray
       body: SingleChildScrollView(
@@ -40,6 +44,7 @@ class createAccount extends StatelessWidget {
                 Container(
                   width: 300, // Adjust the width as needed
                   child: TextField(
+                    controller: loginController,
                     decoration: InputDecoration(
                       hintText: 'Enter Mercer ID',
                       hintStyle: TextStyle(color: Colors.black),
@@ -61,6 +66,7 @@ class createAccount extends StatelessWidget {
                 Container(
                   width: 300, // Adjust the width as needed
                   child: TextField(
+                    controller: passwordController,
                     decoration: InputDecoration(
                       hintText: 'Enter Password',
                       hintStyle: TextStyle(color: Colors.black),
@@ -83,6 +89,11 @@ class createAccount extends StatelessWidget {
                   onPressed: () {
                     print('Create Account pressed');
                     // Add your create account logic here
+                    print(loginController.text + "@live.mercer.edu");
+                    print(passwordController.text);
+
+                    createUserWithEmailAndPassword(loginController.text + "@live.mercer.edu", passwordController.text);
+
                   },
                   child: Text(
                     'Create Account',
