@@ -1,11 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:bear_tracks/globals.dart';
 import 'package:bear_tracks/map.dart';
 
+/*
+  VERY IMPORTANT TODOS
+  TODO: Include ALL licenses/attributions needed from all plugins, Mapbox, OSM, etc.
+  TODO: Figure out why each user is being double-counted
+*/
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  initBearTracks();
   runApp(const BearTracks());
+}
+
+void initBearTracks() {
+  // Enable dark theme
+  SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+  // Hide the status bar
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [SystemUiOverlay.bottom]);
+  SystemChrome.setSystemUIChangeCallback((systemOverlaysAreVisible) async {
+    if (systemOverlaysAreVisible) {
+      await Future.delayed(const Duration(seconds: 3), SystemChrome.restoreSystemUIOverlays);
+    }
+  });
 }
 
 class BearTracks extends StatelessWidget {
@@ -13,21 +31,9 @@ class BearTracks extends StatelessWidget {
   
   @override 
   Widget build(BuildContext context) {
-    // Dark theme FTW
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
-    // Hide the status bar
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [SystemUiOverlay.bottom]);
-    // I said hide it, dammit!
-    SystemChrome.setSystemUIChangeCallback((systemOverlaysAreVisible) async {
-      if (systemOverlaysAreVisible) {
-        await Future.delayed(const Duration(seconds: 3), SystemChrome.restoreSystemUIOverlays);
-      }
-    });
-
-    return MaterialApp(
+    return const MaterialApp(
       title: 'BearTracks', 
-      home: const MapScreen(),
-      scaffoldMessengerKey: scaffoldKey,
+      home: MapScreen(),
     ); 
-  } 
+  }
 }

@@ -1,16 +1,12 @@
+import 'dart:async';
 // ignore: unused_import
 import 'dart:developer';
-import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_animations/flutter_map_animations.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:vector_map_tiles/vector_map_tiles.dart';
+import 'package:geolocator/geolocator.dart' show ServiceStatus;
+import 'package:latlong2/latlong.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
-// ignore: unused_import
 import 'package:bear_tracks/globals.dart';
 import 'package:bear_tracks/gps.dart';
 
@@ -22,188 +18,133 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
-  late final AnimatedMapController _controller = AnimatedMapController(
-    vsync: this,
-    duration: const Duration(milliseconds: 500),
-    curve: Curves.easeInOut,
-  );
-  bool isMapReady = false;
-  Style? _style;
-  bool isLocationEnabled = false;
-  GPS gps = GPS();
 
+class _MapScreenState extends State<MapScreen> {
+  bool _isLocationEnabled = false;
+  Future<bool>? _isMapReady;
+  late MapboxMap _mapboxMap;
+  final GPS _gps = GPS();
+  StreamSubscription<ServiceStatus>? _serviceStatusStreamSubscription;
 
-  // A whole bunch of initialization.
+  /*
+    CONSTRUCTION / DESTRUCTION
+  */
   @override
   void initState() {
     super.initState();
-    _initGPS();
-    WidgetsFlutterBinding.ensureInitialized();
-    _initStyle();
+    _init();
   }
+  void _init() async {
+    // Initialize Mapbox
+    MapboxOptions.setAccessToken(const String.fromEnvironment('PRIVATE_ACCESS_TOKEN'));
 
-  // Initialize style
-  Future<void> _initStyle() async {
-    _style = await _readStyle();
-    setState(() {});
-  }
-  
-  // Initialize GPS and create a location stream for the CurrentLocationMarker
-  Future<void> _initGPS() async {
-    await gps.init();
-    gps.serviceStatusStream?.listen((serviceStatus) {
+    // Initialize GPS
+    await _gps.init();
+    bool isLocationEnabled = await _gps.isLocationServiceEnabledGL();
+    _serviceStatusStreamSubscription = _gps.serviceStatusStream?.listen((serviceStatus) {
       setState(() {
-        isLocationEnabled = gps.evaluateServiceStatus(serviceStatus);
+        _isLocationEnabled = serviceStatus == ServiceStatus.enabled;
       });
+      _isLocationEnabled? _enableLocationPuck() : _disableLocationPuck();
     });
     setState(() { // Initialize on first run
-      isLocationEnabled = gps.evaluateServiceStatus(gps.serviceStatus);
+      _isLocationEnabled = isLocationEnabled;
     });
+
+    // Done initializing - therefore the map is ready to be loaded.
+    _isMapReady = Future.value(true);
   }
 
   @override
   void dispose() {
-    gps.dispose();
-    _controller.dispose();
+    _serviceStatusStreamSubscription?.cancel();
+    _gps.dispose();
+    _mapboxMap.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    log('Building...');
-    if (_style == null) {
-      return const Center(
-        child: CircularProgressIndicator(
-          color: mercerMercerOrange,
-          backgroundColor: mercerDarkGray,
-        ),
-      );
-    }
-    log('got here');
-    Widget map = _map(_style!);
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if (kDebugMode)
-              Container(
-                color: mercerDarkGray,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _debugStats(_controller.mapController)
-                  ],
-                ),
-              ),
-            Flexible(
-              child: map,
+    return FutureBuilder(
+      future: _isMapReady,
+      builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting || snapshot.connectionState == ConnectionState.none) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: mercerMercerOrange,
+              backgroundColor: mercerDarkGray,
             ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _recenterUserOnMap(_controller),
-        child: isLocationEnabled
-          ? const Icon(Icons.my_location_sharp)
-          : const Icon(Icons.location_disabled)
-      ),
-    );
-  }
-
-  Widget _map(Style style) {
-    MapOptions mapOptions = MapOptions(
-      initialCenter: gps.getInitialLatLng(),
-      initialZoom: 18.0,
-      minZoom: 17.0,
-      maxZoom: 19.0,
-      onMapReady: () {
-        setState(() {
-          isMapReady = true;
-        });
+          );
+        }
+        return SafeArea(
+          child: Scaffold(
+            body: MapWidget(
+              key: const ValueKey('mapWidget'),
+              cameraOptions: CameraOptions(
+                zoom: 18.0,
+              ),
+              styleUri: const String.fromEnvironment('STYLE_URI'),
+              onMapCreated: _onMapCreated,
+            ),
+            floatingActionButton: FloatingActionButton(
+              onPressed: () {
+                _centerUserOnMap();
+              },
+              child: Icon(_isLocationEnabled? Icons.my_location_sharp : Icons.location_disabled)
+            ),
+          )
+        );
       }
     );
-
-    log('Building map...');
-    return FlutterMap(
-      mapController: _controller.mapController,
-      options: mapOptions,
-      children: [
-        // TODO: Play with style
-        VectorTileLayer(
-          tileProviders: style.providers,
-          theme: style.theme,
-          sprites: style.sprites,
-          tileOffset: TileOffset.mapbox,
-          fileCacheTtl: const Duration(days: 2), // TODO: Increase in prod
-          logCacheStats: true,
-          layerMode: VectorTileLayerMode.vector,
-          maximumZoom: mapOptions.maxZoom,
-          cacheFolder: _getTempDirectory, // TODO: Check this is a good location
-        ),
-        CurrentLocationMarker( // imported from gps.dart
-          isLocationEnabled: isLocationEnabled,
-          positionStream: gps.positionStream,
-        ),
-        RichAttributionWidget(
-          attributions: [
-            TextSourceAttribution(
-              'OpenStreetMap contributors',
-              onTap: () => launchUrl(Uri.parse('https://openstreetmap.org/copyright')),
-            ),
-          ],
-          alignment: AttributionAlignment.bottomLeft,
-        ),
-      ],
-    );
   }
 
-  Widget _debugStats(MapController mapController) {
-    TextStyle debugTextStyle = const TextStyle(
-      backgroundColor: mercerDarkGray,
-      color: mercerLighterGray,
+  void _onMapCreated(MapboxMap mapboxMap) async {
+    // Interface for accessing most mapbox features.
+    _mapboxMap = mapboxMap;
+    // Center the camera on whatever the user's initial position is.
+    _centerCameraOnLatLng(_gps.getInitialLatLng());
+    // Enable the location puck
+    await _enableLocationPuck();
+  }
+
+  // Enables the location puck.
+  // Checks user permissions and requests permissions if disabled.
+  Future<void> _enableLocationPuck() async {
+    if (!await _gps.isLocationServiceAndPermissionEnabledGL()) return;
+    _mapboxMap.location.updateSettings(
+      LocationComponentSettings(
+        enabled: true,
+        pulsingEnabled: true,
+        showAccuracyRing: true,
+        puckBearingEnabled: true,
+        puckBearing: PuckBearing.HEADING,
+      )
     );
-    return Padding(
-      padding: const EdgeInsets.only(
-        top: 12,
-        bottom: 12,
-      ),
-      child: StreamBuilder(
-        stream: mapController.mapEventStream,
-        builder: (context, snapshot) {
-          return (isMapReady)
-            ? Text(
-                'Zoom: ${mapController.camera.zoom.toStringAsFixed(2)}      '
-                'LatLng: ${mapController.camera.center.latitude.toStringAsFixed(4)}, '
-                        '${mapController.camera.center.longitude.toStringAsFixed(4)}',
-                style: debugTextStyle,
-              )
-            : Text(
-              'Loading debug stats...',
-              style: debugTextStyle,
-            );
-        }
+  }
+  void _disableLocationPuck() async {
+    _mapboxMap.location.updateSettings(
+      LocationComponentSettings(
+        enabled: false
       )
     );
   }
 
-  Future<Style> _readStyle() async {
-    return StyleReader(
-      uri: '${const String.fromEnvironment('STYLE_URI')}?access_token={key}',
-      apiKey: const String.fromEnvironment('PUBLIC_ACCESS_TOKEN')
-    ).read();
-  }
-
-  Future<Directory> _getTempDirectory() async {
-    final cacheDirectory = await getTemporaryDirectory();
-    return cacheDirectory;
-  }
-
-  void _recenterUserOnMap(AnimatedMapController controller) async {
-    if (await gps.isServiceStatusAndPermissionsEnabledGL(request: true)) {
-      controller.centerOnPoint(gps.latlng ?? controller.mapController.camera.center);
+  // Center the camera on the user's current location.
+  void _centerUserOnMap() async {
+    if (await _gps.isLocationServiceAndPermissionEnabledGL(request: true)) {
+      _centerCameraOnLatLng(_gps.latlng);
     }
   }
+  // Center the camera on the provided position.
+  void _centerCameraOnLatLng(LatLng? latlng) {
+    if (latlng == null) return;
+    _mapboxMap.setCamera(
+      CameraOptions(
+        center: Point(coordinates: _toPosition(latlng)).toJson()
+      )
+    );
+  }
 }
+
+// Converts a LatLng to a MAPBOX Position.
+Position _toPosition(LatLng latlng) => Position(latlng.longitude, latlng.latitude);
