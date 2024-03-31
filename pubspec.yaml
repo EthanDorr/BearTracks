@@ -30,10 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_map:
-  latlong2:
-  location: 
   google_fonts: 6.1.0
+  shared_preferences: ^2.2.2
+
 
   #Firebase:
   firebase_core: 

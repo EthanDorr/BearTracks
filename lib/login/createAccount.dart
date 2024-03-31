@@ -14,10 +14,25 @@ class createAccount extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color.fromRGBO(34, 34, 34, 1), // Set background color to gray
+      appBar: AppBar(
+        backgroundColor: Colors.transparent, // Set app bar background color to transparent
+        elevation: 0, // Remove app bar elevation
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: Colors.white,
+            size: 30,
+            ),
+          onPressed: () {
+            print('Back button pressed');
+            Navigator.pop(context); // Navigate back to the previous screen
+          },
+        ),
+      ),
       body: SingleChildScrollView(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 150, horizontal: 30), // Adjust padding as needed
+            padding: const EdgeInsets.symmetric(vertical: 100, horizontal: 30), // Adjust padding as needed
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
@@ -30,10 +45,10 @@ class createAccount extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      'Student Login',
+                      'Create Account',
                       style: GoogleFonts.poppins(
                         color: Colors.white,
-                        fontSize: 45,
+                        fontSize: 35,
                         fontWeight: FontWeight.bold,
 
                       ),
@@ -67,6 +82,7 @@ class createAccount extends StatelessWidget {
                   width: 300, // Adjust the width as needed
                   child: TextField(
                     controller: passwordController,
+                    obscureText: true,
                     decoration: InputDecoration(
                       hintText: 'Enter Password',
                       hintStyle: TextStyle(color: Colors.black),
@@ -93,36 +109,9 @@ class createAccount extends StatelessWidget {
                     print(passwordController.text);
 
                     createUserWithEmailAndPassword(loginController.text + "@live.mercer.edu", passwordController.text);
-
                   },
                   child: Text(
                     'Create Account',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                    ),
-                  ),
-                  style: ButtonStyle(
-                    padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
-                      EdgeInsets.symmetric(vertical: 16, horizontal: 32), // Adjust the padding as needed
-                    ),
-                    backgroundColor: MaterialStateProperty.all<Color>(const Color(0xFFF76800)),
-                    shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                      RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    print('GO BACK');
-                    //Navigate back to the previous screen
-                    Navigator.pop(context);
-                  },
-                  child: Text(
-                    'Go Back',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,
