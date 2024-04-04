@@ -52,3 +52,5 @@ app.*.map.json
 
 #API KEYS TO IGNORE
 api-keys.json
+android/gradle.properties
+

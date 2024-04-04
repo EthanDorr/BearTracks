@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'accontLogic.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import "package:bear_tracks/map.dart";
 
 class studentLoginScreen extends StatefulWidget {
   const studentLoginScreen({super.key});
@@ -128,12 +129,16 @@ class _StudentLoginScreenState extends State<studentLoginScreen> {
                     setRememberMeStatus(rememberMe);
                     saveUserCredentials(email, password);
 
+                    //For Testing, Move to the map screen on press
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const MapScreen()));
 
-                    //For testing, show who is signed in
+
+                    
                     User? user = FirebaseAuth.instance.currentUser;
 
                     if (user != null) {
                       print('User is Signed in: ${user.uid}');
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const MapScreen()));
 
                     }
                     else {
