@@ -36,7 +36,7 @@ void resetPassword(String email) async {
       await FirebaseAuth.instance.sendPasswordResetEmail(
       email: email);
   } catch (e) {
-    print('Failed to send password reset email: ${e}');
+    print('Failed to send password reset email: $e');
   }
 }
 
@@ -48,7 +48,7 @@ void deleteAccount() async {
   try {
     await FirebaseAuth.instance.currentUser?.delete();
   } catch (e) {
-    print('Failed to delete user account: ${e}');
+    print('Failed to delete user account: $e');
   }
 }
 

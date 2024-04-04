@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'loginscreen.dart';
 import 'accontLogic.dart';
 
 class createAccount extends StatelessWidget {
-  const createAccount({Key? key}) : super(key: key);
+  const createAccount({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +16,7 @@ class createAccount extends StatelessWidget {
         backgroundColor: Colors.transparent, // Set app bar background color to transparent
         elevation: 0, // Remove app bar elevation
         leading: IconButton(
-          icon: Icon(
+          icon: const Icon(
             Icons.arrow_back,
             color: Colors.white,
             size: 30,
@@ -38,9 +36,9 @@ class createAccount extends StatelessWidget {
               children: <Widget>[
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Color(0xFFF76800), // Set background color of the box
+                    color: const Color(0xFFF76800), // Set background color of the box
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Center(
@@ -55,77 +53,77 @@ class createAccount extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(height: 110),
-                Container(
+                const SizedBox(height: 110),
+                SizedBox(
                   width: 300, // Adjust the width as needed
                   child: TextField(
                     controller: loginController,
                     decoration: InputDecoration(
                       hintText: 'Enter Mercer ID',
-                      hintStyle: TextStyle(color: Colors.black),
+                      hintStyle: const TextStyle(color: Colors.black),
                       filled: true,
                       fillColor: Colors.white, // Set background color to white
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none, // Hide the border
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Adjust the padding
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Adjust the padding
                     ),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.black,
                       fontSize: 16,
                     ), // Set text color to black
                   ),
                 ),
-                SizedBox(height: 20),
-                Container(
+                const SizedBox(height: 20),
+                SizedBox(
                   width: 300, // Adjust the width as needed
                   child: TextField(
                     controller: passwordController,
                     obscureText: true,
                     decoration: InputDecoration(
                       hintText: 'Enter Password',
-                      hintStyle: TextStyle(color: Colors.black),
+                      hintStyle: const TextStyle(color: Colors.black),
                       filled: true,
                       fillColor: Colors.white, // Set background color to white
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none, // Hide the border
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Adjust the padding
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Adjust the padding
                     ),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.black,
                       fontSize: 16,
                     ), // Set text color to black
                   ),
                 ),
-                SizedBox(height: 100),
+                const SizedBox(height: 100),
                 ElevatedButton(
                   onPressed: () {
                     print('Create Account pressed');
                     // Add your create account logic here
-                    print(loginController.text + "@live.mercer.edu");
+                    print('${loginController.text}@live.mercer.edu');
                     print(passwordController.text);
 
-                    createUserWithEmailAndPassword(loginController.text + "@live.mercer.edu", passwordController.text);
+                    createUserWithEmailAndPassword('${loginController.text}@live.mercer.edu', passwordController.text);
                   },
-                  child: Text(
-                    'Create Account',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                    ),
-                  ),
                   style: ButtonStyle(
                     padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
-                      EdgeInsets.symmetric(vertical: 16, horizontal: 32), // Adjust the padding as needed
+                      const EdgeInsets.symmetric(vertical: 16, horizontal: 32), // Adjust the padding as needed
                     ),
                     backgroundColor: MaterialStateProperty.all<Color>(const Color(0xFFF76800)),
                     shape: MaterialStateProperty.all<RoundedRectangleBorder>(
                       RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
+                    ),
+                  ),
+                  child: const Text(
+                    'Create Account',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
                     ),
                   ),
                 ),

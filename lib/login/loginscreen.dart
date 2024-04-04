@@ -4,7 +4,7 @@ import 'studentLoginScreen.dart';
 import 'createAccount.dart';
 
 class LoginScreen extends StatelessWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -12,12 +12,12 @@ class LoginScreen extends StatelessWidget {
       backgroundColor: const Color.fromRGBO(34, 34, 34, 1), // Set background color to gray
       body: Center(
         child: Transform.translate(
-          offset: Offset(0, -20), // Move both the image and the text upwards by adjusting the vertical offset
+          offset: const Offset(0, -20), // Move both the image and the text upwards by adjusting the vertical offset
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Image.asset(
-                "assets/images/Spirit-mercer-block-m.png",
+                'assets/images/Spirit-mercer-block-m.png',
                 width: 300,
                 height: 300,
               ),
@@ -25,7 +25,7 @@ class LoginScreen extends StatelessWidget {
               Text(
                 'Bear Tracks',
                 style: GoogleFonts.caveat(
-                  textStyle: TextStyle(
+                  textStyle: const TextStyle(
                     fontSize: 72,
                     color: Color(0xFFF76800),
                     fontWeight: FontWeight.bold,
@@ -37,24 +37,24 @@ class LoginScreen extends StatelessWidget {
                 onPressed: () {
                   print('Student Login pressed');
                   //Navigate to StudentLoginScreen
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => studentLoginScreen()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const studentLoginScreen()));
                 },
-                child: Text(
-                  'Student Login',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                  ),
-                ),
                 style: ButtonStyle(
                   padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
-                    EdgeInsets.symmetric(vertical: 16, horizontal: 32), // Adjust the padding as needed
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 32), // Adjust the padding as needed
                   ),
                   backgroundColor: MaterialStateProperty.all<Color>(const Color(0xFFF76800)),
                   shape: MaterialStateProperty.all<RoundedRectangleBorder>(
                     RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
+                  ),
+                ),
+                child: const Text(
+                  'Student Login',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
                   ),
                 ),
               ),
@@ -63,24 +63,24 @@ class LoginScreen extends StatelessWidget {
                 onPressed: () {
                   print('Student Login pressed');
                   //Navigate to StudentLoginScreen
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => createAccount()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const createAccount()));
                 },
-                child: Text(
-                  'Create Account',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                  ),
-                ),
                 style: ButtonStyle(
                   padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
-                    EdgeInsets.symmetric(vertical: 16, horizontal: 32), // Adjust the padding as needed
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 32), // Adjust the padding as needed
                   ),
                   backgroundColor: MaterialStateProperty.all<Color>(const Color(0xFFF76800)),
                   shape: MaterialStateProperty.all<RoundedRectangleBorder>(
                     RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
+                  ),
+                ),
+                child: const Text(
+                  'Create Account',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
                   ),
                 ),
               ),
@@ -90,7 +90,7 @@ class LoginScreen extends StatelessWidget {
                   print('Continue as guest pressed');
                   // Add the action you want to perform when "Continue as guest" is pressed
                 },
-                child: Text(
+                child: const Text(
                   'Continue as guest',
                   style: TextStyle(
                     color: Colors.white,

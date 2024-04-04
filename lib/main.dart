@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart'; 
 import 'package:flutter/services.dart';
 
-import 'package:bear_tracks/map.dart';
 import 'login/loginscreen.dart'; // Import the LoginScreen class
 
 //firebase 
