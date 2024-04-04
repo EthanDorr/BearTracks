@@ -16,6 +16,9 @@ const Color mercerLightGray = Color.fromARGB(255, 153, 153, 153);
 const Color mercerLighterGray = Color.fromARGB(255, 245, 245, 245);
 const Color mercerWhite = Color.fromARGB(255, 255, 255, 255);
 
+const Color mercerLightGrayLowOpacity = Color.fromARGB(100, 153, 153, 153);
+const Color mercerLighterGrayLowOpacity = Color.fromARGB(100, 245, 245, 245);
+
 // Secondary
 const Color mercerRed = Color.fromARGB(255, 249, 49, 74);
 const Color mercerBlue = Color.fromARGB(255, 34, 151, 208);
@@ -30,3 +33,7 @@ const Color mercerBeige = Color.fromARGB(255, 235, 220, 182);
 
 // Notable Coordinates
 const LatLng mercerCenter = LatLng(32.8285, -83.6497);
+
+
+// Map Stuff
+const double zoomLevelClose = 16.5;

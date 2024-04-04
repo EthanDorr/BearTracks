@@ -13,16 +13,16 @@ import 'package:bear_tracks/globals.dart';
 // TODO: Implement openLocationSettings()
 
 class GPS {
-  LatLng? _latlng;
-  Stream<ServiceStatus>? _serviceStatusStream;
-  StreamSubscription<ServiceStatus>? _serviceStatusStreamSubscription;
-  Stream<Position>? _positionStream;
-  StreamSubscription<Position>? _positionStreamSubscription;
-  late SharedPreferences _prefs;
   final LocationSettings _locationSettings = const LocationSettings(
     accuracy: LocationAccuracy.best,
     distanceFilter: 1,
   );
+  
+  LatLng? _latlng;
+  Stream<ServiceStatus>? _serviceStatusStream;
+  StreamSubscription<ServiceStatus>? _serviceStatusStreamSubscription;
+  StreamSubscription<Position>? _positionStreamSubscription;
+  late SharedPreferences _prefs;
 
   LatLng? get latlng => _latlng;
   Stream<ServiceStatus>? get serviceStatusStream => _serviceStatusStream;
@@ -36,7 +36,6 @@ class GPS {
     await _startServiceStream();
     await _startPositionStream();
   }
-
   void dispose() {
     _stopPositionStream();
     _stopServiceStream();
@@ -45,16 +44,6 @@ class GPS {
   /*
     PUBLIC METHODS
   */
-
-  // Check GEOLOCATOR for whether location services are enabled.
-  Future<bool> isLocationServiceEnabledGL() async {
-    return await Geolocator.isLocationServiceEnabled();
-  }
-  // Checks whether the user has both location services and permissions enabled.
-  // Adds the option to request permission if it is denied.
-  Future<bool> isLocationServiceAndPermissionEnabledGL({bool request = false}) async {
-    return await isLocationServiceEnabledGL() && (await (request? _requestLocationPermissionGL() : _isLocationPermissionEnabledGL()));
-  }
 
   // Gets the initial LatLng that the map should center to upon loading for the first time.
   LatLng getInitialLatLng() {
@@ -65,10 +54,12 @@ class GPS {
     PRIVATE METHODS
   */
 
+  // The service stream is responsible for sending updates whenever the status of the user's location services updates.
   Future<void> _startServiceStream() async {
     _serviceStatusStream ??= Geolocator.getServiceStatusStream();
     _serviceStatusStreamSubscription ??= _serviceStatusStream
       ?.listen((ServiceStatus status) {
+        // Enable/disable the position stream based on the status of location services.
         status == ServiceStatus.enabled? _startPositionStream() : _stopPositionStream();        
       }, onError: (e, stackTrace) {
         log('Error during service stream: $e\n$stackTrace');
@@ -80,24 +71,24 @@ class GPS {
     _serviceStatusStreamSubscription = null;
   }
 
+  // The position stream is responsible for sending updates whenever the user's location changes.
   Future<void> _startPositionStream() async {
+    // TODO: Try and refactor to not use try-catch for logic.
+    // To be fair, it's only needed because the user is more than likely spamming on/off location.
     try {
       if (!await isLocationServiceAndPermissionEnabledGL(request: true)) return;
 
-      _latlng = _toLatLng(await _getCurrentPositionGL());
-      _positionStream ??= Geolocator.getPositionStream(
+      _latlng = toLatLng(await Geolocator.getCurrentPosition());
+      _positionStreamSubscription ??= Geolocator.getPositionStream(
         locationSettings: _locationSettings
-      ).asBroadcastStream();
-
-      _positionStreamSubscription ??= _positionStream
-        ?.listen((Position pos) {
-          _latlng = _toLatLng(pos);
-          _saveLatLng(_latlng);
-        }, onError: (e, stackTrace) {
-          log('Error during position stream: $e\n$stackTrace');
-          _stopPositionStream();
-        },
-        cancelOnError: true);
+      ).listen((Position pos) {
+        _latlng = toLatLng(pos);
+        _saveLatLng(_latlng);
+      }, onError: (e, stackTrace) {
+        log('Error during position stream: $e\n$stackTrace');
+        _stopPositionStream();
+      },
+      cancelOnError: true);
     } catch (e, stackTrace) {
       log('Error starting position stream (the user was probably fiddling with location): $e\n$stackTrace');
       _stopPositionStream();
@@ -107,31 +98,6 @@ class GPS {
     _positionStreamSubscription?.cancel();
     _positionStreamSubscription = null;
     _latlng = null;
-  }
-
-  // Should only be called when we are sure location services and permissions are enabled.
-  Future<Position> _getCurrentPositionGL() => Geolocator.getCurrentPosition();
-
-  // Check GEOLOCATOR for whether location permissions are enabled.
-  Future<bool> _isLocationPermissionEnabledGL() async {
-    return await Geolocator.checkPermission() == LocationPermission.whileInUse;
-  }
-  // Use GEOLOCATOR to request location permissions from the user.
-  Future<bool> _requestLocationPermissionGL() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      // Hacky way to check whether the user enables location after the prompt.
-      if (permission == LocationPermission.denied) {
-        _printSnackBar('Location permissions are not enabled for this instance. Please enable permissions and restart the app to use location features.');
-        return false;
-      }
-    }
-    if (permission == LocationPermission.deniedForever) {
-      // TODO: Verify that openAppSettings() works as expected
-      return await Geolocator.openAppSettings()? await _isLocationPermissionEnabledGL() : false;
-    }
-    return true;
   }
 
   /*
@@ -149,19 +115,61 @@ class GPS {
     final double? latitude = _prefs.getDouble('latitude'), longitude = _prefs.getDouble('longitude');
     if (latitude == null || longitude == null) return null;
     return LatLng(latitude, longitude);
-  }
+  }  
+}
 
-  /*
-    HELPERS / UTILITY
-  */
 
-  // Converts a GEOLOCATOR Position to a LatLng
-  LatLng _toLatLng(Position position) => LatLng(position.latitude, position.longitude);
-  
-  // Displays messages on the SnackBar.
-  void _printSnackBar(String message) {
-    scaffoldKey.currentState?.showSnackBar(
-      SnackBar(content: Text(message))
-    );
+// Check GEOLOCATOR for whether location services are enabled.
+Future<bool> isLocationServiceEnabledGL() async {
+  return await Geolocator.isLocationServiceEnabled();
+}
+// Check GEOLOCATOR for whether location permissions are enabled and request permission if it is denied.
+Future<bool> isLocationPermissionEnabledGL({bool request = false}) async {
+  return await (request? _requestLocationPermissionGL() : _isLocationPermissionEnabledGL());
+}
+// Checks whether the user has both location services and permissions enabled.
+// Adds the option to request permission if it is denied.
+Future<bool> isLocationServiceAndPermissionEnabledGL({bool request = false}) async {
+  return await isLocationServiceEnabledGL() && await isLocationPermissionEnabledGL(request: request);
+}
+
+// Check GEOLOCATOR for whether location permissions are enabled.
+Future<bool> _isLocationPermissionEnabledGL() async {
+  return await Geolocator.checkPermission() == LocationPermission.whileInUse;
+}
+// Use GEOLOCATOR to request location permissions from the user.
+Future<bool> _requestLocationPermissionGL() async {
+  LocationPermission permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+    // Hacky way to check whether the user enables location after the prompt.
+    if (permission == LocationPermission.denied) {
+      _printSnackBar('Location permissions are not enabled for this instance. Please enable permissions and restart the app to use location features.');
+      return false;
+    }
   }
+  if (permission == LocationPermission.deniedForever) {
+    // TODO: Verify that openAppSettings() works as expected
+    return await Geolocator.openAppSettings()? await _isLocationPermissionEnabledGL() : false;
+  }
+  return true;
+}
+
+
+/*
+  HELPERS / UTILITY
+*/
+
+// Converts a GEOLOCATOR Position to a LatLng
+LatLng toLatLng(Position position) => LatLng(position.latitude, position.longitude);
+
+double distanceBetweenGL(LatLng start, LatLng end) {
+  return Geolocator.distanceBetween(start.latitude, start.longitude, end.latitude, end.longitude);
+}
+
+// Displays messages on the SnackBar.
+void _printSnackBar(String message) {
+  scaffoldKey.currentState?.showSnackBar(
+    SnackBar(content: Text(message))
+  );
 }

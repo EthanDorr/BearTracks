@@ -6,7 +6,8 @@ import 'package:bear_tracks/map.dart';
 /*
   VERY IMPORTANT TODOS
   TODO: Include ALL licenses/attributions needed from all plugins, Mapbox, OSM, etc.
-  TODO: Figure out why each user is being double-counted
+  TODO: Ensure use of Geolocator position stream only for saving location to disk/fetching initial location 
+  TODO: HANDLE ERRORS ON HTTP REQUESTS
 */
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,8 @@ void initBearTracks() {
       await Future.delayed(const Duration(seconds: 3), SystemChrome.restoreSystemUIOverlays);
     }
   });
+  // TODO: Hopefully fix app to work in landscape mode. Main offender: location information display. For now, portrait only.
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 }
 
 class BearTracks extends StatelessWidget {
@@ -34,6 +37,7 @@ class BearTracks extends StatelessWidget {
     return const MaterialApp(
       title: 'BearTracks', 
       home: MapScreen(),
+      debugShowCheckedModeBanner: false,
     ); 
   }
 }
