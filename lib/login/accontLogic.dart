@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
+import "package:bear_tracks/firebase_options.dart";
 
 //Create new Account wiht Email & Password
 Future<UserCredential?> createUserWithEmailAndPassword(String email, String password) async {
@@ -15,6 +17,16 @@ Future<UserCredential?> createUserWithEmailAndPassword(String email, String pass
     return null;
   }
 }
+
+//Paswordless Account
+Future<void> sendVerification() async {
+
+    FirebaseAuth.instance.currentUser?.sendEmailVerification();
+  
+}
+
+
+
 
 //Sign in with Email & Password
 Future<UserCredential?> loginWithEmailAndPassword(String email, String password) async {

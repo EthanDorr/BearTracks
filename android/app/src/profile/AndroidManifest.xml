@@ -5,3 +5,13 @@
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
 </manifest>
+
+<!-- Firebase Dynamic Links Setup-->
+<intent-filter>
+    <action android:name="android.intent.action.VIEW"/>
+    <category android:name="android.intent.category.DEFAULT"/>
+    <category android:name="android.intent.category.BROWSABLE"/>
+    <data
+        android:host="https://beartracks.page.link"
+        android:scheme="https"/>
+</intent-filter>

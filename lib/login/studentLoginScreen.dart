@@ -1,8 +1,11 @@
+import 'package:bear_tracks/map.dart';
+import 'package:bear_tracks/spashScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'accontLogic.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import "package:bear_tracks/map.dart";
+import "emailVerification.dart";
+import 'splashScreen.dart';
 
 class studentLoginScreen extends StatefulWidget {
   const studentLoginScreen({super.key});
@@ -126,19 +129,32 @@ class _StudentLoginScreenState extends State<studentLoginScreen> {
                     loginWithEmailAndPassword(email, password);
                     
                     //Set rememberMe information
-                    setRememberMeStatus(rememberMe);
-                    saveUserCredentials(email, password);
+                    //setRememberMeStatus(rememberMe);
+                    //saveUserCredentials(email, password);
 
                     //For Testing, Move to the map screen on press
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const MapScreen()));
+                    //Navigator.push(context, MaterialPageRoute(builder: (context) => const MapScreen()));
 
 
                     
                     User? user = FirebaseAuth.instance.currentUser;
 
+                    //Check to see if user email is verified
+
+                    
+
                     if (user != null) {
                       print('User is Signed in: ${user.uid}');
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const MapScreen()));
+                      //Navigator.push(context, MaterialPageRoute(builder: (context) => const MapScreen()));
+                      
+                      if(user.emailVerified)
+                      {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) =>  const MapScreen()));
+                      }
+                      else{
+                        //Display text saying "Email not Verified"
+                        Navigator.push(context, MaterialPageRoute(builder: (context) =>  emailVerification()));
+                      }
 
                     }
                     else {

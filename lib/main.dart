@@ -23,14 +23,6 @@ void main() async {
   runApp(const BearTracks());
 }
 
-
-/*
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  initBearTracks();
-  runApp(const BearTracks());
-} */
-
 void initBearTracks() {
   // Enable dark theme
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);

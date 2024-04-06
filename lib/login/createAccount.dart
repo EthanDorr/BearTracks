@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'accontLogic.dart';
+import "emailVerification.dart";
 
 class createAccount extends StatelessWidget {
   const createAccount({super.key});
@@ -100,13 +102,31 @@ class createAccount extends StatelessWidget {
                 ),
                 const SizedBox(height: 100),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     print('Create Account pressed');
                     // Add your create account logic here
                     print('${loginController.text}@live.mercer.edu');
                     print(passwordController.text);
+                    //sendSignInLink(loginController.text + '@live.mercer.edu');
+                    /*
+                    Create Account
+                    Sign into account
+                    Send Email Verification
+                    */
+                    User? user = FirebaseAuth.instance.currentUser;
+                    //Logging out for testing purposes
+                    logout();
+                    print('User is Signed in: ${user?.uid}');
+                    
 
                     createUserWithEmailAndPassword('${loginController.text}@live.mercer.edu', passwordController.text);
+                    loginWithEmailAndPassword('${loginController.text}@live.mercer.edu', passwordController.text);
+                    await Future.delayed(Duration(milliseconds: 500));
+                    sendVerification(); //This is being send sometimes, might need to add delay after logging in
+
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => emailVerification()));
+                    
+
                   },
                   style: ButtonStyle(
                     padding: MaterialStateProperty.all<EdgeInsetsGeometry>(

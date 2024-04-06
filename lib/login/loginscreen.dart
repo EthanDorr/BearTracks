@@ -1,3 +1,5 @@
+import 'package:bear_tracks/login/accontLogic.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'studentLoginScreen.dart';
@@ -92,6 +94,40 @@ class LoginScreen extends StatelessWidget {
                 },
                 child: const Text(
                   'Continue as guest',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    decoration: TextDecoration.underline, // Underline to indicate it's clickable
+                    decorationColor: Colors.white, // Set underline color to white
+                  ),
+                ),
+              ),
+
+              //Buttons For Tesint Purposes
+                GestureDetector(
+                onTap: () {
+                  print('Logging Out');
+                  logout();
+                  // Add the action you want to perform when "Continue as guest" is pressed
+                },
+                child: const Text(
+                  'LogOut',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    decoration: TextDecoration.underline, // Underline to indicate it's clickable
+                    decorationColor: Colors.white, // Set underline color to white
+                  ),
+                ),
+              ),
+                            GestureDetector(
+                onTap: () {
+                    User? user = FirebaseAuth.instance.currentUser;
+                    print('User is Signed in: ${user?.uid}');
+                  // Add the action you want to perform when "Continue as guest" is pressed
+                },
+                child: const Text(
+                  'Check User ID',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,

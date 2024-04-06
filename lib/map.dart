@@ -88,7 +88,8 @@ class _MapScreenState extends State<MapScreen> {
             ),
             floatingActionButton: FloatingActionButton(
               onPressed: () {
-                _centerUserOnMap();
+                //_centerUserOnMap();
+                Navigator.pop(context);
               },
               child: Icon(_isLocationEnabled? Icons.my_location_sharp : Icons.location_disabled)
             ),
