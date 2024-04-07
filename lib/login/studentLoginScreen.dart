@@ -1,11 +1,11 @@
+import 'package:bear_tracks/globals.dart';
+import 'package:bear_tracks/login/resetPassword.dart';
 import 'package:bear_tracks/map.dart';
-import 'package:bear_tracks/spashScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'accontLogic.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import "emailVerification.dart";
-import 'splashScreen.dart';
+import 'verification.dart';
 
 class studentLoginScreen extends StatefulWidget {
   const studentLoginScreen({super.key});
@@ -26,7 +26,7 @@ class _StudentLoginScreenState extends State<studentLoginScreen> {
 
 
     return Scaffold(
-      backgroundColor: const Color.fromRGBO(34, 34, 34, 1), // Set background color to gray
+      backgroundColor: mercerBlack, // Set background color to gray
       appBar: AppBar(
         backgroundColor: Colors.transparent, // Set app bar background color to transparent
         elevation: 0, // Remove app bar elevation
@@ -53,7 +53,7 @@ class _StudentLoginScreenState extends State<studentLoginScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF76800), // Set background color of the box
+                    color: mercerMercerOrange, // Set background color of the box
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Center(
@@ -113,6 +113,22 @@ class _StudentLoginScreenState extends State<studentLoginScreen> {
                     ), // Set text color to black
                   ),
                 ),
+                const SizedBox(height: 10),
+                GestureDetector(
+                  onTap: () {
+                    
+                    Navigator.push(context, MaterialPageRoute(builder: (context) =>  const passwordResetScreen()));
+                  },
+                  child: const Text(
+                    'Reset Password',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      decoration: TextDecoration.underline, // Underline to indicate it's clickable
+                      decorationColor: Colors.white, // Set underline color to white
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 100),
                 ElevatedButton(
                   onPressed: () async {
@@ -126,48 +142,42 @@ class _StudentLoginScreenState extends State<studentLoginScreen> {
                     print(password);
                     print('Remember Me Value: $rememberMe');
 
-                    loginWithEmailAndPassword(email, password);
-                    
-                    //Set rememberMe information
-                    //setRememberMeStatus(rememberMe);
-                    //saveUserCredentials(email, password);
-
-                    //For Testing, Move to the map screen on press
-                    //Navigator.push(context, MaterialPageRoute(builder: (context) => const MapScreen()));
-
-
+                    await loginWithEmailAndPassword(email, password);
                     
                     User? user = FirebaseAuth.instance.currentUser;
 
-                    //Check to see if user email is verified
-
-                    
-
                     if (user != null) {
-                      print('User is Signed in: ${user.uid}');
-                      //Navigator.push(context, MaterialPageRoute(builder: (context) => const MapScreen()));
-                      
                       if(user.emailVerified)
                       {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) =>  const MapScreen()));
+                        return const MapScreen(accountType: true);
                       }
                       else{
                         //Display text saying "Email not Verified"
-                        Navigator.push(context, MaterialPageRoute(builder: (context) =>  emailVerification()));
+                        Navigator.push(context, MaterialPageRoute(builder: (context) =>  const verification(verificationType: 'email',)));
                       }
 
                     }
                     else {
-                      print('no user signed in');
+                      //Say email or password is incorrect
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Email or password is incorrect',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 18
+                            )
+                          ),
+                          duration: const Duration(seconds: 10),
+                          backgroundColor: mercerBlack,
+                          ));
                     }
-
-
                   },
                   style: ButtonStyle(
                     padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
                       const EdgeInsets.symmetric(vertical: 16, horizontal: 32), // Adjust the padding as needed
                     ),
-                    backgroundColor: MaterialStateProperty.all<Color>(const Color(0xFFF76800)),
+                    backgroundColor: MaterialStateProperty.all<Color>(mercerMercerOrange),
                     shape: MaterialStateProperty.all<RoundedRectangleBorder>(
                       RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -195,7 +205,7 @@ class _StudentLoginScreenState extends State<studentLoginScreen> {
                     ),
                     const SizedBox(width: 10),
                     Checkbox(
-                      value: rememberMe, // Use the rememberMe variable to manage the state of the checkbox
+                      value: rememberMe,
                       onChanged: (value) {
                         setState( () {
                           rememberMe = value ?? false;

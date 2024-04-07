@@ -1,4 +1,6 @@
+import 'package:bear_tracks/globals.dart';
 import 'package:bear_tracks/login/accontLogic.dart';
+import 'package:bear_tracks/map.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,7 +13,7 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromRGBO(34, 34, 34, 1), // Set background color to gray
+      backgroundColor: mercerBlack, // Set background color to gray
       body: Center(
         child: Transform.translate(
           offset: const Offset(0, -20), // Move both the image and the text upwards by adjusting the vertical offset
@@ -29,7 +31,7 @@ class LoginScreen extends StatelessWidget {
                 style: GoogleFonts.caveat(
                   textStyle: const TextStyle(
                     fontSize: 72,
-                    color: Color(0xFFF76800),
+                    color: mercerMercerOrange,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -37,15 +39,13 @@ class LoginScreen extends StatelessWidget {
               const SizedBox(height: 45),
               ElevatedButton(
                 onPressed: () {
-                  print('Student Login pressed');
-                  //Navigate to StudentLoginScreen
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const studentLoginScreen()));
                 },
                 style: ButtonStyle(
                   padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
                     const EdgeInsets.symmetric(vertical: 16, horizontal: 32), // Adjust the padding as needed
                   ),
-                  backgroundColor: MaterialStateProperty.all<Color>(const Color(0xFFF76800)),
+                  backgroundColor: MaterialStateProperty.all<Color>(mercerMercerOrange),
                   shape: MaterialStateProperty.all<RoundedRectangleBorder>(
                     RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -71,7 +71,7 @@ class LoginScreen extends StatelessWidget {
                   padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
                     const EdgeInsets.symmetric(vertical: 16, horizontal: 32), // Adjust the padding as needed
                   ),
-                  backgroundColor: MaterialStateProperty.all<Color>(const Color(0xFFF76800)),
+                  backgroundColor: MaterialStateProperty.all<Color>(mercerMercerOrange),
                   shape: MaterialStateProperty.all<RoundedRectangleBorder>(
                     RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -90,7 +90,7 @@ class LoginScreen extends StatelessWidget {
               GestureDetector(
                 onTap: () {
                   print('Continue as guest pressed');
-                  // Add the action you want to perform when "Continue as guest" is pressed
+                  Navigator.push(context, MaterialPageRoute(builder: (context) =>  const MapScreen(accountType: false)));
                 },
                 child: const Text(
                   'Continue as guest',
@@ -120,7 +120,7 @@ class LoginScreen extends StatelessWidget {
                   ),
                 ),
               ),
-                            GestureDetector(
+              GestureDetector(
                 onTap: () {
                     User? user = FirebaseAuth.instance.currentUser;
                     print('User is Signed in: ${user?.uid}');

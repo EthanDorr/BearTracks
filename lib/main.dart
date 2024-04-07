@@ -1,3 +1,4 @@
+import 'package:bear_tracks/splashScreen.dart';
 import 'package:flutter/material.dart'; 
 import 'package:flutter/services.dart';
 
@@ -30,7 +31,7 @@ void initBearTracks() {
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [SystemUiOverlay.bottom]);
   SystemChrome.setSystemUIChangeCallback((systemOverlaysAreVisible) async {
     if (systemOverlaysAreVisible) {
-      await Future.delayed(const Duration(seconds: 3), SystemChrome.restoreSystemUIOverlays);
+      await Future.delayed(const Duration(seconds: 1), SystemChrome.restoreSystemUIOverlays);
     }
   });
 } 
@@ -41,10 +42,9 @@ class BearTracks extends StatelessWidget {
   
   @override 
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'BearTracks', 
-      home: LoginScreen(),
-    ); 
-
+    return MaterialApp(
+      title: 'BearTracks',
+      home: SplashScreenWidget(), // Set SplashScreenWidget as the home page
+    );
   }
 }
