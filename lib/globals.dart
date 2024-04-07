@@ -1,9 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 
-// TODO: Refactor to remove. Currently only used by permissions manager in GPS
-final GlobalKey<ScaffoldMessengerState> scaffoldKey = GlobalKey<ScaffoldMessengerState>();
+GlobalKey<ScaffoldMessengerState> rootScaffoldKey = GlobalKey<ScaffoldMessengerState>();
+GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // Displays messages on the SnackBar.
+  void printSnackBar(String message, {Duration? duration}) {
+    rootScaffoldKey.currentState?.showSnackBar(
+      SnackBar(
+        backgroundColor: mercerBlack,
+        content: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: mercerWhite,
+          )
+        )
+      )
+    );
+  }
 
 // Mercer Orange
 const Color mercerMercerOrange = Color.fromARGB(255, 247, 104, 000);
@@ -15,6 +31,9 @@ const Color mercerGray = Color.fromARGB(255, 103, 103, 103);
 const Color mercerLightGray = Color.fromARGB(255, 153, 153, 153);
 const Color mercerLighterGray = Color.fromARGB(255, 245, 245, 245);
 const Color mercerWhite = Color.fromARGB(255, 255, 255, 255);
+
+const Color mercerLightGrayLowOpacity = Color.fromARGB(100, 153, 153, 153);
+const Color mercerLighterGrayLowOpacity = Color.fromARGB(100, 245, 245, 245);
 
 // Secondary
 const Color mercerRed = Color.fromARGB(255, 249, 49, 74);
@@ -30,3 +49,35 @@ const Color mercerBeige = Color.fromARGB(255, 235, 220, 182);
 
 // Notable Coordinates
 const LatLng mercerCenter = LatLng(32.8285, -83.6497);
+
+
+// Map Stuff
+const double zoomLevelClose = 16.5;
+
+
+// Animation Stuff
+const Duration trackLocationTimerDuration = Duration(milliseconds: 2000);
+const Duration trackDirectionTimerDuration = Duration(milliseconds: 3000);
+const Duration routeDrawingAnimationDuration = Duration(milliseconds: 1000);
+const Duration orientUserAnimationDuration = Duration(milliseconds: 500);
+const Duration centerCameraAnimationDuration = Duration(milliseconds: 1500);
+
+// GOOD
+Future<Uint8List> loadImageAsUint8List(String image) async {
+  final ByteData bytes = await rootBundle.load('assets/$image');
+  return bytes.buffer.asUint8List();
+}
+
+class LoadingIndicator extends StatelessWidget {
+  const LoadingIndicator({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: CircularProgressIndicator(
+        color: mercerMercerOrange,
+        backgroundColor: mercerDarkGray,
+      ),
+    );
+  }
+}

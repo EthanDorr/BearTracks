@@ -1,8 +1,9 @@
 import 'dart:async';
+// ignore: unused_import
 import 'dart:developer';
-import 'package:flutter/material.dart';
-import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 
+// ignore: unused_import
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,247 +15,155 @@ class GPS {
     accuracy: LocationAccuracy.best,
     distanceFilter: 1,
   );
-
+  
   LatLng? _latlng;
-  Position? _position;
-  ServiceStatus? _serviceStatus;
   Stream<ServiceStatus>? _serviceStatusStream;
   StreamSubscription<ServiceStatus>? _serviceStatusStreamSubscription;
-  Stream<Position>? _positionStream;
   StreamSubscription<Position>? _positionStreamSubscription;
   late SharedPreferences _prefs;
 
-  LatLng? get latlng => _latlng;
-  ServiceStatus get serviceStatus => _serviceStatus ?? ServiceStatus.disabled;
   Stream<ServiceStatus>? get serviceStatusStream => _serviceStatusStream;
-  StreamSubscription<ServiceStatus>? get serviceStatusStreamSubscription => _serviceStatusStreamSubscription;
-  Stream<Position>? get positionStream => _positionStream;
-  StreamSubscription<Position>? get positionStreamSubscription => _positionStreamSubscription;  
-  Future<LatLng?> get currentLatLng async => toLatLng(await getCurrentPositionGL());
-  Future<LatLng?> get lastKnownLatLng async => toLatLng(await getLastKnownPositionGL());
 
-  // Initialize the GPS
-  // First manually check if location services are enabled. This is so the map can build correctly as soon as possible.
-  // Then, only if location permissions are given, do we start the service and position streams.
-  // This is because the service stream controls the position stream, i.e., turns it on/off with location.
+  /*
+    INITIALIZATION METHODS
+  */
+
   Future<void> init() async {
-    //initHive();
     _prefs = await SharedPreferences.getInstance();
-    if (await requestLocationPermissionGL()) {
-      await startServiceStream();
-      startPositionStream();
-    }
+    await _startServiceStream();
+    await _startPositionStream();
   }
-
-  // Save the current location, then stop both the service and position streams.
   void dispose() {
-    _savePosition(_position);
-    stopServiceStream();
-    stopPositionStream();
+    _stopPositionStream();
+    _stopServiceStream();
   }
 
-  void debug() {
-    log('LatLng: $_latlng\n'
-        'Position: $_position\n'
-        'ServiceStatus: $_serviceStatus\n'
-        'ServiceStream: ${serviceStatusStreamSubscription != null}\n'
-        'PositionStream: ${_positionStreamSubscription != null}\n'
-    );
+  /*
+    PUBLIC METHODS
+  */
+
+  // Gets the initial LatLng that the map should center to upon loading for the first time.
+  LatLng getInitialLatLng() {
+    return _latlng ?? _loadLatLng() ?? mercerCenter;
   }
 
-  Future<void> startServiceStream() async {
-    _serviceStatus = await Geolocator.isLocationServiceEnabled()? ServiceStatus.enabled : ServiceStatus.disabled;
+  /*
+    PRIVATE METHODS
+  */
+
+  // The service stream is responsible for sending updates whenever the status of the user's location services updates.
+  Future<void> _startServiceStream() async {
     _serviceStatusStream ??= Geolocator.getServiceStatusStream();
     _serviceStatusStreamSubscription ??= _serviceStatusStream
       ?.listen((ServiceStatus status) {
-        _serviceStatus = status;
-        (_serviceStatus == ServiceStatus.enabled)
-          ? startPositionStream()
-          : stopPositionStream();        
+        // Enable/disable the position stream based on the status of location services.
+        status == ServiceStatus.enabled? _startPositionStream() : _stopPositionStream();        
       }, onError: (e, stackTrace) {
         log('Error during service stream: $e\n$stackTrace');
-        stopServiceStream();
+        _stopServiceStream();
       });
   }
-
-  void stopServiceStream() {
+  void _stopServiceStream() {
     _serviceStatusStreamSubscription?.cancel();
     _serviceStatusStreamSubscription = null;
   }
 
-  Future<void> startPositionStream() async {
+  // The position stream is responsible for sending updates whenever the user's location changes.
+  Future<void> _startPositionStream() async {
     try {
-      if (!await isServiceStatusAndPermissionsEnabledGL()) return;
-
-      // Initialize position and latlng
-      _position = await Geolocator.getCurrentPosition();
-      _latlng = toLatLng(_position);
-
-      _positionStream ??= Geolocator.getPositionStream(
+      if (!await isLocationPermissionEnabledGL(request: true)) return;
+      _latlng = toLatLng(await Geolocator.getCurrentPosition());
+      _positionStreamSubscription ??= Geolocator.getPositionStream(
         locationSettings: _locationSettings
-      // TODO: Is this needed?
-      ).asBroadcastStream();
-
-      _positionStreamSubscription ??= _positionStream
-        ?.listen((Position pos) {
-          _position = pos;
-          _latlng = toLatLng(pos);
-          _savePosition(pos);
-        }, onError: (e, stackTrace) {
-          log('Error during position stream: $e\n$stackTrace');
-          stopPositionStream();
-        },
-        cancelOnError: true);
+      ).listen((Position pos) {
+        _latlng = toLatLng(pos);
+        _saveLatLng(_latlng);
+      }, onError: (e, stackTrace) {
+        log('Error during position stream: $e\n$stackTrace');
+        _stopPositionStream();
+      },
+      cancelOnError: true);
     } catch (e, stackTrace) {
-      log('Error starting position stream! (The user was probably fiddling with location.)\n'
-          '$e\n$stackTrace');
-      stopPositionStream();
+      log('Error starting position stream (the user was probably fiddling with location): $e\n$stackTrace');
+      _stopPositionStream();
     }
   }
-
-  void stopPositionStream() {
-    positionStreamSubscription?.cancel();
+  void _stopPositionStream() {
+    _positionStreamSubscription?.cancel();
     _positionStreamSubscription = null;
-    _position = null;
     _latlng = null;
   }
 
-  LatLng getInitialLatLng() {
-    LatLng initialLatLng = _latlng ?? _loadLatLng() ?? mercerCenter;
-    _latlng = initialLatLng;
-    return initialLatLng;  
-  }
+  /*
+    IO
+  */
 
-  Future<Position?> getCurrentPositionGL() async {
-    return await isServiceStatusAndPermissionsEnabledGL(request: true)
-      ? await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-          forceAndroidLocationManager: true,
-        )
-      : null;
+  // Saves the user's LatLng to disk so that it can be retrieved on next startup.
+  void _saveLatLng(LatLng? latlng) {
+    if (latlng == null) return;
+    _prefs.setDouble('latitude', latlng.latitude);
+    _prefs.setDouble('longitude', latlng.longitude);
   }
-
-  Future<Position?> getLastKnownPositionGL() async {
-    return await isServiceStatusAndPermissionsEnabledGL(request: true)
-      ? await Geolocator.getLastKnownPosition(
-          forceAndroidLocationManager: true,
-        )
-      : null;
-  }
-
-  Future<bool> isLocationServicesAndPermissionsEnabledGL({bool request = false}) async {
-    return await isLocationServicesEnabledGL() && (request
-      ? await requestLocationPermissionGL()
-      : await isLocationPermissionEnabledGL()
-    );
-  }
-
-  // Evaluates whether the user has enabled location services on their device.
-  Future<bool> isLocationServicesEnabledGL() async {
-    return await Geolocator.isLocationServiceEnabled();
-  }
-
-  // Evaluates whether the user has both location services and permissions enabled.
-  Future<bool> isServiceStatusAndPermissionsEnabledGL({bool request = false}) async {
-    return isServiceStatusEnabled() && (
-      request? await requestLocationPermissionGL() : await isLocationPermissionEnabledGL()
-    );
-  }
-
-  bool isServiceStatusEnabled() {
-    return _serviceStatus == ServiceStatus.enabled;
-  }
-
-  bool evaluateServiceStatus(ServiceStatus? status) {
-    return status == ServiceStatus.enabled;
-  }
-
-  // Checks that the user has enabled location permissions.
-  Future<bool> isLocationPermissionEnabledGL() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    return (permission == LocationPermission.always || permission == LocationPermission.whileInUse);
-  }
-
-  // Requests location permissions from the user.
-  // TODO: Verify that openAppSettings does what I want it to (I can almost guarantee it doesn't)
-  Future<bool> requestLocationPermissionGL() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        _printSnackBar('Location permissions are not enabled for this instance. Please enable permissions and restart the app to use location features.');
-        return false;
-      }
-    }
-    if (permission == LocationPermission.deniedForever) {
-      bool settingsOpened = await Geolocator.openAppSettings();
-      if (!settingsOpened) return false;
-      return isLocationPermissionEnabledGL();
-    }
-    return true;
-  }
-
-  // Load the user's saved position from disk.
+  // Load the user's saved LatLng from disk.
   LatLng? _loadLatLng() {
     final double? latitude = _prefs.getDouble('latitude'), longitude = _prefs.getDouble('longitude');
     if (latitude == null || longitude == null) return null;
     return LatLng(latitude, longitude);
-  }
-
-  // Saves the user's position on disk so that it can be retrieved on next startup.
-  void _savePosition(Position? position) {
-    // Do not save null positions to disk.
-    if (position == null) return;
-    _prefs.setDouble('latitude', position.latitude);
-    _prefs.setDouble('longitude', position.longitude);
-  }
-
-  // Helper function for converting a Position to a LatLng
-  LatLng? toLatLng(Position? position) {
-    return (position != null)
-      ? LatLng(position.latitude, position.longitude)
-      : null;
-  }
-
-  // Helper function for displaying messages on the SnackBar.
-  void _printSnackBar(String message) {
-    scaffoldKey.currentState?.showSnackBar(
-      SnackBar(content: Text(message))
-    );
-  }
+  }  
 }
 
 
-class CurrentLocationMarker extends StatefulWidget {
-  final bool isLocationEnabled;
-  final Stream<Position?>? positionStream;
-
-  const CurrentLocationMarker({
-    super.key, 
-    required this.isLocationEnabled,
-    required this.positionStream,
-  });
-
-  @override
-  State<CurrentLocationMarker> createState() => _CurrentLocationMarkerState();
+// Check GEOLOCATOR for whether location permissions are enabled and request permission if it is denied.
+Future<bool> isLocationPermissionEnabledGL({bool request = false}) async {
+  return request? await _requestLocationPermissionGL() : await _isLocationPermissionEnabledGL();
+}
+// Check GEOLOCATOR for whether location services are enabled.
+Future<bool> isLocationServiceEnabledGL({bool request = false}) async {
+  final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (serviceEnabled) return true;
+  try {
+    if (request) await Geolocator.getCurrentPosition();
+  } catch (e, stackTrace) {
+    log('Error requesting location services (user probably just denied pop-up): $e\n$stackTrace');
+    return false;
+  }
+  return await Geolocator.isLocationServiceEnabled();
+}
+// Checks whether the user has both location services and permissions enabled.
+// Adds the option to request permission if it is denied.
+Future<bool> isLocationPermissionAndServiceEnabledGL({bool request = false}) async {
+  return await isLocationPermissionEnabledGL(request: request) && await isLocationServiceEnabledGL(request: request);
 }
 
-class _CurrentLocationMarkerState extends State<CurrentLocationMarker> {
-  @override
-  void initState() {
-    super.initState();
+// Check GEOLOCATOR for whether location permissions are enabled.
+Future<bool> _isLocationPermissionEnabledGL() async {
+  return await Geolocator.checkPermission() == LocationPermission.whileInUse;
+}
+// Use GEOLOCATOR to request location permissions from the user.
+Future<bool> _requestLocationPermissionGL() async {
+  LocationPermission permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+    // Hacky way to check whether the user enables location after the prompt.
+    if (permission == LocationPermission.denied) {
+      printSnackBar('Location permissions are not enabled for this instance. Please enable permissions to use location features.');
+      return false;
+    }
   }
+  if (permission == LocationPermission.deniedForever) {
+    printSnackBar('Location permissions have been permanently denied. Please enable permissions to use location features.');
+    Timer(const Duration(seconds: 5), () async => await Geolocator.openAppSettings()? await _isLocationPermissionEnabledGL() : false);
+  }
+  return true;
+}
 
-  @override
-  Widget build(BuildContext context) {
-    const factory = LocationMarkerDataStreamFactory();
-    return widget.isLocationEnabled
-      ? CurrentLocationLayer(
-          positionStream: factory.fromGeolocatorPositionStream(
-            stream: widget.positionStream,
-          ),
-          alignPositionOnUpdate: AlignOnUpdate.never,
-        )
-      : const SizedBox.shrink();
-  }
+/*
+  HELPERS / UTILITY
+*/
+
+// Converts a GEOLOCATOR Position to a LatLng
+LatLng toLatLng(Position position) => LatLng(position.latitude, position.longitude);
+
+double distanceBetweenGL(LatLng start, LatLng end) {
+  return Geolocator.distanceBetween(start.latitude, start.longitude, end.latitude, end.longitude);
 }

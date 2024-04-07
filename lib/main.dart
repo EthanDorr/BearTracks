@@ -1,10 +1,19 @@
+import 'package:bear_tracks/firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-import 'package:bear_tracks/globals.dart';
-import 'package:bear_tracks/map.dart';
+import 'package:bear_tracks/globals.dart' show rootScaffoldKey;
+import 'package:bear_tracks/splash_screen.dart';
 
-void main() {
+/*
+  VERY IMPORTANT TODOS
+  TODO: Include ALL licenses/attributions needed from all plugins, Mapbox, OSM, etc.
+*/
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  ); 
   runApp(const BearTracks());
 }
 
@@ -13,21 +22,11 @@ class BearTracks extends StatelessWidget {
   
   @override 
   Widget build(BuildContext context) {
-    // Dark theme FTW
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
-    // Hide the status bar
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [SystemUiOverlay.bottom]);
-    // I said hide it, dammit!
-    SystemChrome.setSystemUIChangeCallback((systemOverlaysAreVisible) async {
-      if (systemOverlaysAreVisible) {
-        await Future.delayed(const Duration(seconds: 3), SystemChrome.restoreSystemUIOverlays);
-      }
-    });
-
     return MaterialApp(
+      scaffoldMessengerKey: rootScaffoldKey,
       title: 'BearTracks', 
-      home: const MapScreen(),
-      scaffoldMessengerKey: scaffoldKey,
+      home: const SplashScreen(),
+      debugShowCheckedModeBanner: false,
     ); 
-  } 
+  }
 }
