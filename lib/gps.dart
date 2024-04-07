@@ -122,7 +122,7 @@ Future<bool> isLocationServiceEnabledGL({bool request = false}) async {
   final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
   if (serviceEnabled) return true;
   try {
-    if (request) await Geolocator.openLocationSettings();
+    if (request) await Geolocator.getCurrentPosition();
   } catch (e, stackTrace) {
     log('Error requesting location services (user probably just denied pop-up): $e\n$stackTrace');
     return false;
