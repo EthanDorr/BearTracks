@@ -10,8 +10,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:bear_tracks/globals.dart';
 
-// TODO: Implement openLocationSettings()
-
 class GPS {
   final LocationSettings _locationSettings = const LocationSettings(
     accuracy: LocationAccuracy.best,
@@ -24,7 +22,6 @@ class GPS {
   StreamSubscription<Position>? _positionStreamSubscription;
   late SharedPreferences _prefs;
 
-  LatLng? get latlng => _latlng;
   Stream<ServiceStatus>? get serviceStatusStream => _serviceStatusStream;
 
   /*
@@ -73,11 +70,8 @@ class GPS {
 
   // The position stream is responsible for sending updates whenever the user's location changes.
   Future<void> _startPositionStream() async {
-    // TODO: Try and refactor to not use try-catch for logic.
-    // To be fair, it's only needed because the user is more than likely spamming on/off location.
     try {
-      if (!await isLocationServiceAndPermissionEnabledGL(request: true)) return;
-
+      if (!await isLocationPermissionEnabledGL(request: true)) return;
       _latlng = toLatLng(await Geolocator.getCurrentPosition());
       _positionStreamSubscription ??= Geolocator.getPositionStream(
         locationSettings: _locationSettings
@@ -119,18 +113,26 @@ class GPS {
 }
 
 
-// Check GEOLOCATOR for whether location services are enabled.
-Future<bool> isLocationServiceEnabledGL() async {
-  return await Geolocator.isLocationServiceEnabled();
-}
 // Check GEOLOCATOR for whether location permissions are enabled and request permission if it is denied.
 Future<bool> isLocationPermissionEnabledGL({bool request = false}) async {
-  return await (request? _requestLocationPermissionGL() : _isLocationPermissionEnabledGL());
+  return request? await _requestLocationPermissionGL() : await _isLocationPermissionEnabledGL();
+}
+// Check GEOLOCATOR for whether location services are enabled.
+Future<bool> isLocationServiceEnabledGL({bool request = false}) async {
+  final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (serviceEnabled) return true;
+  try {
+    if (request) await Geolocator.openLocationSettings();
+  } catch (e, stackTrace) {
+    log('Error requesting location services (user probably just denied pop-up): $e\n$stackTrace');
+    return false;
+  }
+  return await Geolocator.isLocationServiceEnabled();
 }
 // Checks whether the user has both location services and permissions enabled.
 // Adds the option to request permission if it is denied.
-Future<bool> isLocationServiceAndPermissionEnabledGL({bool request = false}) async {
-  return await isLocationServiceEnabledGL() && await isLocationPermissionEnabledGL(request: request);
+Future<bool> isLocationPermissionAndServiceEnabledGL({bool request = false}) async {
+  return await isLocationPermissionEnabledGL(request: request) && await isLocationServiceEnabledGL(request: request);
 }
 
 // Check GEOLOCATOR for whether location permissions are enabled.
@@ -144,17 +146,16 @@ Future<bool> _requestLocationPermissionGL() async {
     permission = await Geolocator.requestPermission();
     // Hacky way to check whether the user enables location after the prompt.
     if (permission == LocationPermission.denied) {
-      _printSnackBar('Location permissions are not enabled for this instance. Please enable permissions and restart the app to use location features.');
+      printSnackBar('Location permissions are not enabled for this instance. Please enable permissions to use location features.');
       return false;
     }
   }
   if (permission == LocationPermission.deniedForever) {
-    // TODO: Verify that openAppSettings() works as expected
-    return await Geolocator.openAppSettings()? await _isLocationPermissionEnabledGL() : false;
+    printSnackBar('Location permissions have been permanently denied. Please enable permissions to use location features.');
+    Timer(const Duration(seconds: 5), () async => await Geolocator.openAppSettings()? await _isLocationPermissionEnabledGL() : false);
   }
   return true;
 }
-
 
 /*
   HELPERS / UTILITY
@@ -165,11 +166,4 @@ LatLng toLatLng(Position position) => LatLng(position.latitude, position.longitu
 
 double distanceBetweenGL(LatLng start, LatLng end) {
   return Geolocator.distanceBetween(start.latitude, start.longitude, end.latitude, end.longitude);
-}
-
-// Displays messages on the SnackBar.
-void _printSnackBar(String message) {
-  scaffoldKey.currentState?.showSnackBar(
-    SnackBar(content: Text(message))
-  );
 }

@@ -41,6 +41,9 @@ dependencies:
   mapbox_maps_flutter: ^1.0.0
   http: ^1.2.1
   turf: ^0.0.9
+  firebase_core: ^2.28.0
+  firebase_auth: ^4.19.0
+  google_fonts: ^6.2.0
 
 dev_dependencies:
   flutter_test:
@@ -73,6 +76,7 @@ flutter:
 
 
   assets:
+    - assets/mercer-spirit-block.png
     - assets/map-marker.png
     - assets/puck-top-image.png
     - assets/puck-bearing-image.png

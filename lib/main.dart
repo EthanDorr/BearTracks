@@ -1,32 +1,20 @@
+import 'package:bear_tracks/firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-import 'package:bear_tracks/map.dart';
+import 'package:bear_tracks/globals.dart' show rootScaffoldKey;
+import 'package:bear_tracks/splash_screen.dart';
 
 /*
   VERY IMPORTANT TODOS
   TODO: Include ALL licenses/attributions needed from all plugins, Mapbox, OSM, etc.
-  TODO: Ensure use of Geolocator position stream only for saving location to disk/fetching initial location 
-  TODO: HANDLE ERRORS ON HTTP REQUESTS
 */
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  initBearTracks();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  ); 
   runApp(const BearTracks());
-}
-
-void initBearTracks() {
-  // Enable dark theme
-  SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
-  // Hide the status bar
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [SystemUiOverlay.bottom]);
-  SystemChrome.setSystemUIChangeCallback((systemOverlaysAreVisible) async {
-    if (systemOverlaysAreVisible) {
-      await Future.delayed(const Duration(seconds: 3), SystemChrome.restoreSystemUIOverlays);
-    }
-  });
-  // TODO: Hopefully fix app to work in landscape mode. Main offender: location information display. For now, portrait only.
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 }
 
 class BearTracks extends StatelessWidget {
@@ -34,9 +22,10 @@ class BearTracks extends StatelessWidget {
   
   @override 
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
+      scaffoldMessengerKey: rootScaffoldKey,
       title: 'BearTracks', 
-      home: MapScreen(),
+      home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
     ); 
   }
