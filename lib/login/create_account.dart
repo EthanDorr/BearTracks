@@ -64,9 +64,9 @@ class CreateAccount extends StatelessWidget {
                     controller: loginController,
                     decoration: InputDecoration(
                       hintText: 'Enter Mercer ID',
-                      hintStyle: const TextStyle(color: Colors.black),
+                      hintStyle: const TextStyle(color: mercerBlack),
                       filled: true,
-                      fillColor: Colors.white, // Set background color to white
+                      fillColor: mercerWhite, // Set background color to white
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none, // Hide the border
@@ -74,7 +74,7 @@ class CreateAccount extends StatelessWidget {
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Adjust the padding
                     ),
                     style: const TextStyle(
-                      color: Colors.black,
+                      color: mercerBlack,
                       fontSize: 16,
                     ), // Set text color to black
                   ),
@@ -87,9 +87,9 @@ class CreateAccount extends StatelessWidget {
                     obscureText: true,
                     decoration: InputDecoration(
                       hintText: 'Enter Password',
-                      hintStyle: const TextStyle(color: Colors.black),
+                      hintStyle: const TextStyle(color: mercerBlack),
                       filled: true,
-                      fillColor: Colors.white, // Set background color to white
+                      fillColor: mercerWhite, // Set background color to white
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none, // Hide the border
@@ -97,7 +97,7 @@ class CreateAccount extends StatelessWidget {
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Adjust the padding
                     ),
                     style: const TextStyle(
-                      color: Colors.black,
+                      color: mercerBlack,
                       fontSize: 16,
                     ), // Set text color to black
                   ),
@@ -126,7 +126,7 @@ class CreateAccount extends StatelessWidget {
                   child: const Text(
                     'Create Account',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: mercerWhite,
                       fontSize: 18,
                     ),
                   ),

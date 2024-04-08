@@ -19,18 +19,22 @@ class LoginScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: mercerBlack,
       body: Center(
-        child: Transform.translate(
-          offset: const Offset(0, -20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Image.asset(
-                'assets/mercer-spirit-block.png',
-                width: 300,
-                height: 300,
-              ),
-              const SizedBox(height: 15),
-              Text(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+
+            const Spacer(flex: 10),
+
+            Image.asset(
+              'assets/mercer-spirit-block.png',
+              width: 300,
+              height: 300,
+            ),
+            
+            //const Spacer(flex: 1),
+
+            Positioned(
+              child: Text(
                 'BearTracks',
                 style: GoogleFonts.caveat(
                   textStyle: const TextStyle(
@@ -40,49 +44,55 @@ class LoginScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 45),
-              ElevatedButton(
-                onPressed: () {
-                  log('Student Login pressed');
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => StudentLoginScreen(_gps, _isLocationEnabled)));
-                },
-                style: ButtonStyle(
-                  padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 32), 
-                  ),
-                  backgroundColor: MaterialStateProperty.all<Color>(mercerMercerOrange),
-                  shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                    RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
+            ),
+
+            const Spacer(flex: 1),
+
+            ElevatedButton(
+              onPressed: () {
+                log('Student Login pressed');
+                Navigator.push(context, MaterialPageRoute(builder: (context) => StudentLoginScreen(_gps, _isLocationEnabled)));
+              },
+              style: ButtonStyle(
+                padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
+                  const EdgeInsets.symmetric(vertical: 16, horizontal: 32), 
                 ),
-                child: const Text(
-                  'Student Login',
-                  style: TextStyle(
-                    color: mercerWhite,
-                    fontSize: 18,
+                backgroundColor: MaterialStateProperty.all<Color>(mercerMercerOrange),
+                shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
               ),
-              const SizedBox(height: 10), // Add some spacing between the button and "Continue as guest" text
-              GestureDetector(
-                onTap: () {
-                  log('Continue as guest pressed');
-                  Navigator.push(context, MaterialPageRoute(builder: (context) =>  MapScreen(false, _gps, _isLocationEnabled)));
-                },
-                child: const Text(
-                  'Continue as guest',
-                  style: TextStyle(
-                    color: mercerWhite,
-                    fontSize: 14,
-                    decoration: TextDecoration.underline, // Underline to indicate it's clickable
-                    decorationColor: mercerWhite, // Set underline color to white
-                  ),
+              child: const Text(
+                'Student Login',
+                style: TextStyle(
+                  color: mercerWhite,
+                  fontSize: 18,
                 ),
               ),
-            ],
-          ),
+            ),
+
+            const Spacer(flex: 1),
+
+            GestureDetector(
+              onTap: () {
+                log('Continue as guest pressed');
+                Navigator.push(context, MaterialPageRoute(builder: (context) =>  MapScreen(false, _gps, _isLocationEnabled)));
+              },
+              child: const Text(
+                'Continue as guest',
+                style: TextStyle(
+                  color: mercerWhite,
+                  fontSize: 14,
+                  decoration: TextDecoration.underline, // Underline to indicate it's clickable
+                  decorationColor: mercerWhite, // Set underline color to white
+                ),
+              ),
+            ),
+
+            const Spacer(flex: 10),
+          ],
         ),
       ),
     );

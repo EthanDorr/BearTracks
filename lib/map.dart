@@ -6,6 +6,7 @@ import 'dart:developer' show log;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart' show ServiceStatus;
+import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
@@ -39,12 +40,15 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   Animation<double>? _routeAnimation;
   AnimationController? _routeAnimationController;
 
- 
+  late List<ScheduleEntry> schedule;
+
+
   @override
   void initState() {
     super.initState();
     _isLocationEnabled = widget._isLocationEnabled;
     _gps = widget._gps;
+    schedule = _loadSchedule() ?? [];
     _init();
   }
 
@@ -81,12 +85,17 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     log('building!');
     return PopScope(
       canPop: false,
+      onPopInvoked: (bool didPop) {
+        if (scaffoldKey.currentState?.isEndDrawerOpen ?? false) {
+          scaffoldKey.currentState?.closeEndDrawer();
+        } else { setState(() => _displayingLocationInformation = false); }
+      },
       child: Scaffold(
         key: scaffoldKey,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           leading: Container(),
-          actions: const <Widget>[Text('test')], // Hide the hamburger bar for the end drawer
+          actions: <Widget>[Container()], // Hide the hamburger bar for the end drawer
         ),
         body: MapWidget(
           key: const ValueKey('mapWidget'),
@@ -100,36 +109,47 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           onLongTapListener: _onLongTap,
           onScrollListener: _onScroll,
         ),
-        // Button that recenters the camera to the user's location.
-        // Icon automatically adjusts for to accomodate the status of location services.
-        floatingActionButton: MapButton(
-          _trackDirection,
-          _trackLocation,
-          _isLocationEnabled,
-          () {_stopTrackDirection(); _orientUserDirectionNorth();},
-          () {_orientUserDirectionHeading(); _startTrackDirection();},
-          () {_centerCameraOnUser(); _startTrackLocation();}
+        floatingActionButton: FittedBox(
+          child: AnimatedSwitcher(
+            duration: locationInfoTransitionInDuration,
+            reverseDuration: locationInfoTransitionOutDuration,
+            transitionBuilder: (Widget child, Animation<double> animation) => ScaleTransition(scale: animation, child: child),
+            child: Flex(
+              key: ValueKey(_displayingLocationInformation),
+              direction: _displayingLocationInformation? Axis.horizontal : Axis.vertical,
+              children: <Widget>[
+                if (widget._isLoggedIn) const ScheduleButton(),
+                const SizedBox.square(dimension: 10),
+                // Button that recenters the camera to the user's location.
+                // Icon automatically adjusts to accomodate the status of location services.
+                MapButton(
+                  _trackDirection,
+                  _trackLocation,
+                  _isLocationEnabled,
+                  () {_stopTrackDirection(); _orientUserDirectionNorth();},
+                  () {_orientUserDirectionHeading(); _startTrackDirection();},
+                  () {_centerCameraOnUser(); _startTrackLocation();}
+                ),
+              ]
+            ),
+          )
         ),
         // Bottom sheet displays basic location information and gives buttons for directions and routes
         bottomSheet: Container(
           color: mercerBlack,
           child: AnimatedSize(
             curve: Curves.easeOut,
-            duration: Duration(milliseconds: _displayingLocationInformation? 500 : 300),
+            duration: _displayingLocationInformation? locationInfoTransitionInDuration : locationInfoTransitionOutDuration,
             child: LocationInformation(_geocodingResponse, _directUser, _navigateUser, _displayingLocationInformation? 150 : 0),
           )
         ),
-        endDrawer: const ScheduleDisplay(),
+        endDrawer: widget._isLoggedIn? ScheduleDisplay(schedule, _onUpdateEntry) : null,
+        onEndDrawerChanged: (bool isOpened) {
+          if (!isOpened) _saveSchedule();
+        },
         extendBodyBehindAppBar: true,
+        resizeToAvoidBottomInset: false,
       ),
-      onPopInvoked: (bool didPop) {
-        if (scaffoldKey.currentState?.isEndDrawerOpen ?? false) {
-          scaffoldKey.currentState?.closeEndDrawer();
-        }
-        else {
-          setState(() => _displayingLocationInformation = false);
-        }
-      }
     );
   }
 
@@ -151,6 +171,20 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         marginTop: 25,
         marginRight: 25,
         clickable: false, // Can creating a confusing experience when navigating
+      )
+    );
+    // Adjust the attribution.
+    _mapboxMap.attribution.updateSettings(
+      AttributionSettings(
+        marginBottom: 15,
+        marginLeft: 100,
+      )
+    );
+    // Adjust the logo.
+    _mapboxMap.logo.updateSettings(
+      LogoSettings(
+        marginBottom: 15,
+        marginLeft: 15,
       )
     );
     // Enable the location puck by default
@@ -181,7 +215,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     // Last pressed coordinate is not null -> need to calculate distance
     if (_lastPressedCoordinate != null) {
       // Calculate distance in pixels between the marker and new tap position independent of zoom level
-      if (await distanceFromLastCoordinateInPixels(coordinate) < 30) {
+      if (await _distanceFromLastCoordinateInPixels(coordinate) < 30) {
         // If the distance is small enough (user clicked on the map marker) then display the information again.
         return setState(() => _displayingLocationInformation = true);
       }
@@ -208,7 +242,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     log('taaaap');
     if (_lastPressedCoordinate != null) {
       // Calculate distance in meters between the marker and new tap position. This is for clearing the map.
-      if (await distanceFromLastCoordinateInPixels(coordinate) < 30) {
+      if (await _distanceFromLastCoordinateInPixels(coordinate) < 30) {
         // Clear any existing route.
         _routeAnimationController?.reset();
         // Remove any existing points
@@ -485,7 +519,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   // GOOD
-  Future<double> distanceFromLastCoordinateInPixels(ScreenCoordinate coordinate) async {
+  Future<double> _distanceFromLastCoordinateInPixels(ScreenCoordinate coordinate) async {
     return distanceBetweenGL(
       screenCoordinateToLatLng(_lastPressedCoordinate!),
       screenCoordinateToLatLng(coordinate)
@@ -493,6 +527,34 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       _lastPressedCoordinate!.x,
       (await _mapboxMap.getCameraState()).zoom
     );
+  }
+
+  // GOOD (tentatively)
+  void _saveSchedule() async {
+    // Already been initialized in splash screen - should be instant
+    prefs.setString('schedule', json.encode([...schedule.map((entry) => entry.toJson())]));
+  }
+
+  // GOOD (tentatively)
+  List<ScheduleEntry>? _loadSchedule() {
+    // Already been initialized in splash screen - should be instant
+    final String? scheduleString = prefs.getString('schedule');
+    if (scheduleString == null) return null;
+    final List<dynamic> loadedSchedule = json.decode(scheduleString);
+    return loadedSchedule.map((entry) => ScheduleEntry.fromJson((){}, entry)).toList();
+  }
+
+  // GOOD (tentatively)
+  void _onUpdateEntry(List<ScheduleEntry> newSchedule) {
+    schedule.sort((a,b) => timeOfDayInMinutes(a.startTime) - timeOfDayInMinutes(b.startTime));
+    setState(() => schedule = newSchedule);
+    _saveSchedule();
+  }
+
+  // GOOD
+  int timeOfDayInMinutes(TimeOfDay? time) {
+    if (time == null) return 1440; // Should be the limit
+    return 60 * time.hour + time.minute;
   }
 }
 
@@ -530,6 +592,7 @@ class MapButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
+      heroTag: null,
       foregroundColor: mercerMercerOrange,
       backgroundColor: mercerBlack,
       shape: const CircleBorder(
@@ -559,6 +622,28 @@ class MapButton extends StatelessWidget {
 }
 
 // GOOD
+class ScheduleButton extends StatelessWidget {
+  const ScheduleButton({super.key,});
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+      heroTag: null,
+      foregroundColor: mercerMercerOrange,
+      backgroundColor: mercerBlack,
+      shape: const CircleBorder(
+        side: BorderSide(
+          color: mercerDarkGray,
+          width: 4
+        )
+      ),
+      child: const Icon(Icons.book),
+      onPressed: () => scaffoldKey.currentState?.openEndDrawer()
+    );
+  }
+}
+
+// GOOD
 class LocationInformation extends StatelessWidget {
   final Map<String, dynamic>? response;
   final VoidCallback onDirections, onStart;
@@ -574,8 +659,9 @@ class LocationInformation extends StatelessWidget {
     if (locations == null || locations.isEmpty) {
       text = placeName = 'Not Available';
     } else {
-      text = locations[0]['text'];
-      placeName = locations[0]['place_name'];
+      // TODO: Fix this Band-Aid
+      text = locations[0]['text'].replaceAll('Willett', 'Willet');
+      placeName = locations[0]['place_name'].replaceAll('Willett', 'Willet');
     }
 
     return Container(
@@ -626,50 +712,275 @@ class LocationInformation extends StatelessWidget {
   }
 }
 
-class ScheduleDisplay extends StatelessWidget {
 
-  const ScheduleDisplay({super.key});
-  
+class ScheduleDisplay extends StatefulWidget {
+  final Function(List<ScheduleEntry>) onUpdate;
+  final List<ScheduleEntry>? initialSchedule;
+
+  const ScheduleDisplay(this.initialSchedule, this.onUpdate, {super.key});
+
+  @override
+  ScheduleDisplayState createState() => ScheduleDisplayState();
+}
+
+class ScheduleDisplayState extends State<ScheduleDisplay> {
+  late List<ScheduleEntry> schedule;
+
+  @override
+  void initState() {
+    super.initState();
+    schedule = widget.initialSchedule ?? [];
+    for (ScheduleEntry entry in schedule) {
+      entry.onUpdate = _updateEntry;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: mercerBlack,
+      width: MediaQuery.of(context).size.width * .9,
+      backgroundColor: mercerDarkGray,
       shape: const RoundedRectangleBorder(
         side: BorderSide(
-          color: mercerDarkGray,
+          color: mercerBlack,
           width: 3,
         ),
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(25), bottomLeft: Radius.circular(25)),
+        borderRadius: BorderRadius.only(topLeft: Radius.circular(10), bottomLeft: Radius.circular(10)),
       ),
       child: ListView(
         padding: EdgeInsets.zero,
-        children: const [
+        children: <Widget>[
           DrawerHeader(
-            decoration: BoxDecoration(
-              color: mercerDarkGray,
+            decoration: const BoxDecoration(
+              color: mercerBlack,
             ),
-            child: Center(
-              child: Text(
-                'My Schedule',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: mercerMercerOrange,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                )
+            child: FittedBox(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  'Schedule',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    color: mercerMercerOrange,
+                    fontWeight: FontWeight.bold,
+                  )
+                ),
               ),
             ),
           ),
-          ListTile(
-            title: Text('1')
+          ...schedule.map(
+            (entry) => Dismissible(
+              key: ObjectKey(entry),
+              child: entry.build(context),
+              onDismissed: (direction) {
+                final objectKey = ObjectKey(entry);
+                final index = schedule.indexWhere((entry) => ObjectKey(entry) == objectKey);
+                schedule.removeAt(index);
+                _updateEntry();
+              }
+            )
           ),
-          ListTile(
-            title: Text('2')
+          Center(
+            child: IconButton(
+              color: mercerMercerOrange,
+              iconSize: MediaQuery.of(context).size.width * 0.1,
+              onPressed: () {
+                final ScheduleEntry newEntry = ScheduleEntry(_updateEntry, null, null, null);
+                schedule.add(newEntry);
+                _updateEntry();
+              },
+              style: const ButtonStyle(
+                iconColor: MaterialStatePropertyAll(mercerMercerOrange),
+                backgroundColor: MaterialStatePropertyAll(mercerBlack),
+                shape: MaterialStatePropertyAll(CircleBorder()),
+              ),
+              icon: const Icon(Icons.add)
+            ),
           )
-        ]
+        ],
       )
     );
   }
+
+  void _updateEntry() {
+    widget.onUpdate(schedule);
+  }
+}
+
+class ScheduleEntry {
+  String? description;
+  BuildingCode? buildingCode;
+  TimeOfDay? startTime;
+  VoidCallback? onUpdate;
+  final TextEditingController _buildingDescriptionController = TextEditingController();
+  final TextEditingController _buildingCodeController = TextEditingController();
+
+  ScheduleEntry(this.onUpdate, this.description, this.buildingCode, this.startTime);
+
+  ScheduleEntry.fromJson(this.onUpdate, Map<String, dynamic> m) {
+    ScheduleEntry(
+      onUpdate = onUpdate,
+      description = m['description'],
+      buildingCode = (m['code'] != null)? BuildingCode.values.byName(m['code'].toString().toLowerCase()) : null,
+      startTime = (m['hour'] != null && m['minute'] != null)? TimeOfDay(hour: m['hour'], minute: m['minute']) : null
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'description': description,
+      'code': buildingCode?.code,
+      'hour': startTime?.hour,
+      'minute': startTime?.minute
+    };
+  }
+
+  @override
+  String toString({DiagnosticLevel? minLevel}) {
+    return '$description\n${buildingCode?.code}\n${startTime.toString()}';
+  }
+
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10, left: 10, right: 10),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          color: mercerBlack,
+          borderRadius: BorderRadius.all(Radius.circular(25)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.8,
+            height: MediaQuery.of(context).size.height * 0.13,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                TextField(
+                  controller: _buildingDescriptionController,
+                  decoration: InputDecoration(
+                    hintText: description ?? 'Description',
+                    hintStyle: const TextStyle(color: mercerBlack),
+                    filled: true,
+                    fillColor: mercerWhite,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none, 
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  onChanged: (value) {
+                    description = value;
+                    onUpdate!();
+                  },
+                ),
+
+                SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.8,
+                  height: MediaQuery.of(context).size.height * 0.05,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      FittedBox(
+                        child: DropdownMenu<BuildingCode>(
+                          width: MediaQuery.of(context).size.width * 0.45,
+                          controller: _buildingCodeController,
+                          hintText: buildingCode?.code,
+                          inputDecorationTheme: const InputDecorationTheme(
+                            hintStyle: TextStyle(
+                              color: mercerMercerOrange,
+                            ),
+                          ),
+                          onSelected: (BuildingCode? building) {
+                            buildingCode = building;
+                            onUpdate!();
+                          },
+                          textStyle: const TextStyle(
+                            color: mercerMercerOrange,
+                          ),
+                          trailingIcon: const Icon(
+                            Icons.arrow_drop_down,
+                            color: mercerMercerOrange),
+                          menuHeight: MediaQuery.of(context).size.height * 0.4,
+                          dropdownMenuEntries: BuildingCode.values
+                            .map<DropdownMenuEntry<BuildingCode>>(
+                              (BuildingCode building) {
+                                return DropdownMenuEntry<BuildingCode>(
+                                  value: building,
+                                  label: '${building.code} - ${building.name}',
+                                );
+                              }).toList(),
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        icon: const Icon(
+                          Icons.access_time,
+                          color: mercerMercerOrange
+                        ),
+                        label: Text(
+                          startTime?.format(context) ?? 'Select Time',
+                          style: const TextStyle(
+                            color: mercerMercerOrange,
+                          )
+                        ),
+                        style: ButtonStyle(
+                          backgroundColor: MaterialStateProperty.all(mercerBlack),
+                        ),
+                        onPressed: () async {
+                          final TimeOfDay? time = await showTimePicker(
+                            context: context,
+                            initialTime: startTime ?? TimeOfDay.now(),
+                            initialEntryMode: TimePickerEntryMode.dial,
+                          );
+                          if (time != null) startTime = time;
+                          onUpdate!();
+                        },
+                      )
+                    ],
+                  ),
+                ),
+              ]
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum BuildingCode {
+  arc('ARC', 'Academic Resource Center',            LatLng(32.83152980139905, -83.64926525788182)),
+  ccj('CCJ', 'Center for Collaborative Journalism', LatLng(32.83293062158662, -83.65130895001977)),
+  csc('CSC', 'Connell Student Center',              LatLng(32.83064005782506, -83.64888414995121)),
+  egc('EGC', 'Engineering & Classroom Building',    LatLng(32.82722560722719, -83.64876435342445)),
+  grv('GRV', 'Groover Hall',                        LatLng(32.83133473499917, -83.64893652668052)),
+  gsc('GSC', 'Godsey Science Center',               LatLng(32.82879002171659, -83.64868700333554)),
+  har('HAR', 'Hardman Hall',                        LatLng(32.831979004903324, -83.649556329766)),
+  knt('KNT', 'Knight Hall',                         LatLng(32.83149387388999, -83.64785200025678)),
+  lan('LAN', 'Langdale Building',                   LatLng(32.83129992104122, -83.64941040025674)),
+  md( 'MD',  'Medical School Building',             LatLng(32.82783831553583, -83.64766060780819)),
+  mic('MIC', 'Macon Innovation Center',             LatLng(32.82798094297596, -83.64981096223143)),
+  mub('MUB', 'McCorkle Music Building',             LatLng(32.832367349734724, -83.65005181804787)),
+  nwt('NWT', 'Newton Hall',                         LatLng(32.832340287489274, -83.64910406772253)),
+  pen('PEN', 'Penfield Hall',                       LatLng(32.829808518623636, -83.64894291338351)),
+  ryl('RYL', 'Ryals Building',                      LatLng(32.831527698416885, -83.64926490333576)),
+  seb('SEB', 'Science and Engineering Building',    LatLng(32.827667444132636, -83.64949467450046)),
+  stn('STN', 'Stetson Hall',                        LatLng(32.82964965696205, -83.65004877757303)),
+  tca('TCA', 'Tattnall Square Center for the Arts', LatLng(32.83367487237864, -83.64412161068418)),
+  tnc('TNC', 'Tennis Courts',                       LatLng(32.83347200926262, -83.64595088020833)),
+  tvr('TVR', 'Tarver Library',                      LatLng(32.82908637478062, -83.64929317011982)),
+  unc('UNC', 'University Center',                   LatLng(32.82946492358933, -83.6514626720755)),
+  wae('WAE', 'Ware Hall',                           LatLng(32.83107970647383, -83.64849475980648)),
+  wgs('WGS', 'Wiggs Hall',                          LatLng(32.830831759849524, -83.64795858555352)),
+  whm('WHM', 'Willingham Chapel',                   LatLng(32.8320778811188, -83.64878926467448)),
+  wsc('WSC', 'Willet Science Center',               LatLng(32.828486664390915, -83.6497638291515));
+
+  const BuildingCode(this.code, this.name, this.latlng);
+  final String code;
+  final String name;
+  final LatLng latlng;
 }
 
 // GOOD

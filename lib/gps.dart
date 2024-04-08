@@ -6,7 +6,6 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:bear_tracks/globals.dart';
 
@@ -20,7 +19,6 @@ class GPS {
   Stream<ServiceStatus>? _serviceStatusStream;
   StreamSubscription<ServiceStatus>? _serviceStatusStreamSubscription;
   StreamSubscription<Position>? _positionStreamSubscription;
-  late SharedPreferences _prefs;
 
   Stream<ServiceStatus>? get serviceStatusStream => _serviceStatusStream;
 
@@ -29,7 +27,6 @@ class GPS {
   */
 
   Future<void> init() async {
-    _prefs = await SharedPreferences.getInstance();
     await _startServiceStream();
     await _startPositionStream();
   }
@@ -71,7 +68,7 @@ class GPS {
   // The position stream is responsible for sending updates whenever the user's location changes.
   Future<void> _startPositionStream() async {
     try {
-      if (!await isLocationPermissionEnabledGL(request: true)) return;
+      if (!await isLocationPermissionAndServiceEnabledGL()) return;
       _latlng = toLatLng(await Geolocator.getCurrentPosition());
       _positionStreamSubscription ??= Geolocator.getPositionStream(
         locationSettings: _locationSettings
@@ -101,12 +98,12 @@ class GPS {
   // Saves the user's LatLng to disk so that it can be retrieved on next startup.
   void _saveLatLng(LatLng? latlng) {
     if (latlng == null) return;
-    _prefs.setDouble('latitude', latlng.latitude);
-    _prefs.setDouble('longitude', latlng.longitude);
+    prefs.setDouble('latitude', latlng.latitude);
+    prefs.setDouble('longitude', latlng.longitude);
   }
   // Load the user's saved LatLng from disk.
   LatLng? _loadLatLng() {
-    final double? latitude = _prefs.getDouble('latitude'), longitude = _prefs.getDouble('longitude');
+    final double? latitude = prefs.getDouble('latitude'), longitude = prefs.getDouble('longitude');
     if (latitude == null || longitude == null) return null;
     return LatLng(latitude, longitude);
   }  

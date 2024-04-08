@@ -42,7 +42,7 @@ class StudentLoginScreenState extends State<StudentLoginScreen> {
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back,
-            color: Colors.white,
+            color: mercerWhite,
             size: 30,
           ),
           onPressed: () {
@@ -66,12 +66,11 @@ class StudentLoginScreenState extends State<StudentLoginScreen> {
                   color: mercerMercerOrange, 
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Center(
+                child: FittedBox( // Changed from Center to FittedBox
                   child: Text(
                     'Student Login',
                     style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 45,
+                      color: mercerWhite,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -86,9 +85,9 @@ class StudentLoginScreenState extends State<StudentLoginScreen> {
                   controller: _loginController,
                   decoration: InputDecoration(
                     hintText: 'MUID',
-                    hintStyle: const TextStyle(color: Colors.black),
+                    hintStyle: const TextStyle(color: mercerBlack),
                     filled: true,
-                    fillColor: Colors.white, 
+                    fillColor: mercerWhite, 
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none, 
@@ -96,7 +95,7 @@ class StudentLoginScreenState extends State<StudentLoginScreen> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
                   ),
                   style: const TextStyle(
-                    color: Colors.black,
+                    color: mercerBlack,
                     fontSize: 16,
                   ), 
                 ),
@@ -111,9 +110,9 @@ class StudentLoginScreenState extends State<StudentLoginScreen> {
                   obscureText: true,
                   decoration: InputDecoration(
                     hintText: 'Password',
-                    hintStyle: const TextStyle(color: Colors.black),
+                    hintStyle: const TextStyle(color: mercerBlack),
                     filled: true,
-                    fillColor: Colors.white, 
+                    fillColor: mercerWhite, 
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none, 
@@ -121,7 +120,7 @@ class StudentLoginScreenState extends State<StudentLoginScreen> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
                   ),
                   style: const TextStyle(
-                    color: Colors.black,
+                    color: mercerBlack,
                     fontSize: 16,
                   ),
                 ),
@@ -138,27 +137,29 @@ class StudentLoginScreenState extends State<StudentLoginScreen> {
                   'New User? Create An Account',
                   style: TextStyle(
                     color: mercerWhite,
-                    fontSize: 18,
+                    fontSize: 14,
+                    decoration: TextDecoration.underline, 
+                    decorationColor: mercerWhite, 
                   ),
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 5),
 
               GestureDetector(
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) =>  PasswordResetScreen(widget._gps, widget._isLocationEnabled))),
                 child: const Text(
                   'Forgot Password',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: mercerWhite,
                     fontSize: 14,
                     decoration: TextDecoration.underline, 
-                    decorationColor: Colors.white, 
+                    decorationColor: mercerWhite, 
                   ),
                 ),
               ),
 
-              const SizedBox(height: 100),
+              const SizedBox(height: 50),
 
               ElevatedButton(
                 onPressed: () async {
@@ -206,7 +207,7 @@ class StudentLoginScreenState extends State<StudentLoginScreen> {
                 child: const Text(
                   'Login',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: mercerWhite,
                     fontSize: 18,
                   ),
                 ),
