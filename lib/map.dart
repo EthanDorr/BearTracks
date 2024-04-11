@@ -143,7 +143,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             child: LocationInformation(_geocodingResponse, _directUser, _navigateUser, _displayingLocationInformation? 150 : 0),
           )
         ),
-        endDrawer: widget._isLoggedIn? ScheduleDisplay(schedule, _onUpdateEntry) : null,
+        endDrawer: widget._isLoggedIn? ScheduleDisplay(schedule, _onUpdateEntry, _guideUserToNextCourse) : null,
         onEndDrawerChanged: (bool isOpened) {
           if (!isOpened) _saveSchedule();
         },
@@ -311,6 +311,32 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     _startTrackDirection();
   }
 
+  Future<void> _guideUserToNextCourse([Position? routeStart]) async {
+    if (!await isLocationPermissionAndServiceEnabledGL(request: true)) return;
+    if (_displayingLocationInformation) setState(() => _displayingLocationInformation = false);
+    _route = await _getNextRouteOnSchedule(routeStart);
+    if (_route == null) return;
+    _routeAnimationController?.reset();
+    _pointAnnotationManager.deleteAll();
+
+    _lastPressedCoordinate = latlngToScreenCoordinate(LatLng(_route!.last.lat as double, _route!.last.lng as double));
+    scaffoldKey.currentState?.closeEndDrawer();
+    _pointAnnotationManager.create(
+      PointAnnotationOptions(
+        geometry: Point(coordinates: _route!.last).toJson(),
+        image: await loadImageAsUint8List('map-marker.png'),
+        iconAnchor: IconAnchor.BOTTOM,
+        iconSize: 0.5,
+      )
+    );
+    _drawRoute(_route!);
+    _centerCameraOnRoute(routeStart, _route!.last);
+    await Future.delayed(const Duration(seconds: 4));
+    _centerCameraOnUser(bearing: await _mapboxMap.style.getPuckDirection());
+    _startTrackLocation();
+    _startTrackDirection();
+  }
+
   // GOOD
   Future<void> _reverseGeocodeAndDisplayMarker(ScreenCoordinate coordinate) async {
     // Reverse geocode
@@ -337,6 +363,19 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     routeStart ??= await _mapboxMap.style.getPuckPosition();
     if (routeStart == null || _lastPressedCoordinate == null) return null;
     return await fetchRouteCoordinates(routeStart, latlngToPosition(screenCoordinateToLatLng(_lastPressedCoordinate!)));
+  }
+
+  Future<List<Position>?> _getNextRouteOnSchedule([Position? routeStart]) async {
+    routeStart ??= await _mapboxMap.style.getPuckPosition();
+    if (schedule.isEmpty || routeStart == null) return null;
+    final ScheduleEntry nextScheduleEntry = schedule.firstWhere(
+      (ScheduleEntry entry) => (timeOfDayInMinutes(TimeOfDay.now()) < timeOfDayInMinutes(entry.startTime)) && (entry.buildingCode != null),
+      orElse: () => ScheduleEntry(null, null, null, null) // HAVE to return a ScheduleEntry
+    );
+    if (nextScheduleEntry.buildingCode == null) return null;
+    final List<Position>? route = await fetchRouteCoordinates(routeStart, latlngToPosition(nextScheduleEntry.buildingCode!.latlng));
+    if (route == null) return null;
+    return [...route, latlngToPosition(nextScheduleEntry.buildingCode!.latlng)];
   }
 
   // GOOD
@@ -503,14 +542,15 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     _centerCameraOnLatLng(coordinate.x, coordinate.y, zoom: zoom, bearing: bearing);
   }
 
-  // GOOD
-  Future<void> _centerCameraOnRoute([Position? routeStart]) async {
+  // UGLY UGLY UGLY
+  Future<void> _centerCameraOnRoute([Position? routeStart, Position? routeEnd]) async {
     routeStart ??= await _mapboxMap.style.getPuckPosition();
+    routeEnd ??= latlngToPosition(screenCoordinateToLatLng(_lastPressedCoordinate!));
     if (routeStart == null || _route == null) return;
     _stopTrackLocation();
     _stopTrackDirection();
     final CameraOptions camera = await _mapboxMap.cameraForCoordinates(
-      [Point(coordinates: routeStart).toJson(), ..._route!.map((e) => Point(coordinates: e).toJson()), Point(coordinates: latlngToPosition(screenCoordinateToLatLng(_lastPressedCoordinate!))).toJson()],
+      [Point(coordinates: routeStart).toJson(), ..._route!.map((e) => Point(coordinates: e).toJson()), Point(coordinates: routeEnd).toJson()],
       MbxEdgeInsets(top: 200, left: 30, bottom: 200, right: 30),
       null,
       null
@@ -714,10 +754,11 @@ class LocationInformation extends StatelessWidget {
 
 
 class ScheduleDisplay extends StatefulWidget {
-  final Function(List<ScheduleEntry>) onUpdate;
   final List<ScheduleEntry>? initialSchedule;
+  final Function(List<ScheduleEntry>) onUpdate;
+  final Function([Position?]) onRoute;
 
-  const ScheduleDisplay(this.initialSchedule, this.onUpdate, {super.key});
+  const ScheduleDisplay(this.initialSchedule, this.onUpdate, this.onRoute, {super.key});
 
   @override
   ScheduleDisplayState createState() => ScheduleDisplayState();
@@ -771,8 +812,9 @@ class ScheduleDisplayState extends State<ScheduleDisplay> {
           ...schedule.map(
             (entry) => Dismissible(
               key: ObjectKey(entry),
+              direction: DismissDirection.endToStart,
               child: entry.build(context),
-              onDismissed: (direction) {
+              onDismissed: (DismissDirection direction) {
                 final objectKey = ObjectKey(entry);
                 final index = schedule.indexWhere((entry) => ObjectKey(entry) == objectKey);
                 schedule.removeAt(index);
@@ -780,24 +822,70 @@ class ScheduleDisplayState extends State<ScheduleDisplay> {
               }
             )
           ),
-          Center(
-            child: IconButton(
-              color: mercerMercerOrange,
-              iconSize: MediaQuery.of(context).size.width * 0.1,
-              onPressed: () {
-                final ScheduleEntry newEntry = ScheduleEntry(_updateEntry, null, null, null);
-                schedule.add(newEntry);
-                _updateEntry();
-              },
-              style: const ButtonStyle(
-                iconColor: MaterialStatePropertyAll(mercerMercerOrange),
-                backgroundColor: MaterialStatePropertyAll(mercerBlack),
-                shape: MaterialStatePropertyAll(CircleBorder()),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.07,
+                width: MediaQuery.of(context).size.width * 0.35,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text(
+                    'Go Back',
+                    style: TextStyle(
+                      color: mercerMercerOrange,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  style: ButtonStyle(
+                    backgroundColor: const MaterialStatePropertyAll(mercerBlack),
+                    iconColor: const MaterialStatePropertyAll(mercerMercerOrange),
+                    iconSize: MaterialStatePropertyAll(MediaQuery.of(context).size.width * 0.1),                    
+                  ),
+                  onPressed: () => scaffoldKey.currentState!.closeEndDrawer()
+                )
               ),
-              icon: const Icon(Icons.add)
-            ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                color: mercerMercerOrange,
+                iconSize: MediaQuery.of(context).size.width * 0.1,
+                onPressed: () {
+                  final ScheduleEntry newEntry = ScheduleEntry(_updateEntry, null, null, null);
+                  schedule.add(newEntry);
+                  _updateEntry();
+                },
+                style: const ButtonStyle(
+                  iconColor: MaterialStatePropertyAll(mercerMercerOrange),
+                  backgroundColor: MaterialStatePropertyAll(mercerBlack),
+                  shape: MaterialStatePropertyAll(CircleBorder()),
+                )
+              ),
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.07,
+                width: MediaQuery.of(context).size.width * 0.35,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.search),
+                  label: const Text(
+                    'Next Course',
+                    style: TextStyle(
+                      color: mercerMercerOrange,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  style: ButtonStyle(
+                    backgroundColor: const MaterialStatePropertyAll(mercerBlack),
+                    iconColor: const MaterialStatePropertyAll(mercerMercerOrange),
+                    iconSize: MaterialStatePropertyAll(MediaQuery.of(context).size.width * 0.1),
+                  ),
+                  onPressed: () async => await widget.onRoute()
+                ),
+              ),              
+            ]
+          ),
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.5,
           )
-        ],
+        ]
       )
     );
   }
@@ -808,6 +896,7 @@ class ScheduleDisplayState extends State<ScheduleDisplay> {
 }
 
 class ScheduleEntry {
+  final GlobalKey entryKey = GlobalKey();
   String? description;
   BuildingCode? buildingCode;
   TimeOfDay? startTime;
@@ -841,7 +930,9 @@ class ScheduleEntry {
   }
 
   Widget build(BuildContext context) {
+    _buildingDescriptionController.text = description ?? '';
     return Padding(
+      key: entryKey,
       padding: const EdgeInsets.only(bottom: 10, left: 10, right: 10),
       child: DecoratedBox(
         decoration: const BoxDecoration(
@@ -858,9 +949,12 @@ class ScheduleEntry {
               children: <Widget>[
                 TextField(
                   controller: _buildingDescriptionController,
+                  cursorColor: mercerMercerOrange,
                   decoration: InputDecoration(
                     hintText: description ?? 'Description',
-                    hintStyle: const TextStyle(color: mercerBlack),
+                    hintStyle: const TextStyle(
+                      color: mercerBlack,
+                    ),
                     filled: true,
                     fillColor: mercerWhite,
                     border: OutlineInputBorder(
@@ -869,6 +963,18 @@ class ScheduleEntry {
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  onTap: () {
+                    Scrollable.ensureVisible(
+                      entryKey.currentContext!,
+                      duration: const Duration(milliseconds: 500),
+                    );
+                  },
+                  onTapOutside: (event) {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                  },
                   onChanged: (value) {
                     description = value;
                     onUpdate!();
@@ -886,7 +992,7 @@ class ScheduleEntry {
                       FittedBox(
                         child: DropdownMenu<BuildingCode>(
                           width: MediaQuery.of(context).size.width * 0.45,
-                          controller: _buildingCodeController,
+                          controller: _buildingCodeController,              
                           hintText: buildingCode?.code,
                           inputDecorationTheme: const InputDecorationTheme(
                             hintStyle: TextStyle(
@@ -895,10 +1001,12 @@ class ScheduleEntry {
                           ),
                           onSelected: (BuildingCode? building) {
                             buildingCode = building;
+                            _buildingCodeController.clear();
                             onUpdate!();
                           },
                           textStyle: const TextStyle(
                             color: mercerMercerOrange,
+                            fontWeight: FontWeight.bold,
                           ),
                           trailingIcon: const Icon(
                             Icons.arrow_drop_down,
@@ -933,6 +1041,7 @@ class ScheduleEntry {
                             context: context,
                             initialTime: startTime ?? TimeOfDay.now(),
                             initialEntryMode: TimePickerEntryMode.dial,
+                            helpText: '',
                           );
                           if (time != null) startTime = time;
                           onUpdate!();
@@ -985,3 +1094,5 @@ enum BuildingCode {
 
 // GOOD
 LatLng screenCoordinateToLatLng(ScreenCoordinate coordinate) => LatLng(coordinate.x, coordinate.y);
+// GOOD
+ScreenCoordinate latlngToScreenCoordinate(LatLng latlng) => ScreenCoordinate(x: latlng.latitude, y: latlng.longitude);

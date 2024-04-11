@@ -35,7 +35,7 @@ class SplashScreenState extends State<SplashScreen> {
   Future<void> _init() async {
     await _initBearTracks();
     await _initMapScreen();
-    _timer = Timer(const Duration(seconds: 0), () {
+    _timer = Timer(const Duration(seconds: 3), () {
       setState(() { _isAppReady = Future.sync(() => Future.value(true)); });
     });
   }
@@ -82,6 +82,7 @@ class SplashScreenState extends State<SplashScreen> {
         if (snapshot.connectionState == ConnectionState.waiting || snapshot.connectionState == ConnectionState.none) {
           return const SplashImage();
         }
+        //return MapScreen(true, _gps, _isLocationEnabled!);
         return (FirebaseAuth.instance.currentUser != null)? MapScreen(true, _gps, _isLocationEnabled!) : LoginScreen(_gps, _isLocationEnabled!);
       }
     );

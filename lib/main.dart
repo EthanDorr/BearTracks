@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:bear_tracks/globals.dart' show rootScaffoldKey;
+import 'package:bear_tracks/globals.dart';
 import 'package:bear_tracks/splash_screen.dart';
 
 /*
@@ -21,6 +21,28 @@ class BearTracks extends StatelessWidget {
     return MaterialApp(
       scaffoldMessengerKey: rootScaffoldKey,
       title: 'BearTracks', 
+      theme: ThemeData(
+        textSelectionTheme: const TextSelectionThemeData(
+          selectionHandleColor: mercerMercerOrange,
+        ),
+        timePickerTheme: const TimePickerThemeData(
+          backgroundColor: mercerBlack,
+          dayPeriodColor: mercerLightGray,
+          dayPeriodTextColor: mercerWhite,
+          dialBackgroundColor: mercerLightGray,
+          cancelButtonStyle: ButtonStyle(
+            foregroundColor: MaterialStatePropertyAll(mercerMercerOrange)
+          ),
+          confirmButtonStyle: ButtonStyle(
+            foregroundColor: MaterialStatePropertyAll(mercerMercerOrange)
+          ),
+          dialHandColor: mercerMercerOrange,
+          dialTextColor: mercerBlack,
+          hourMinuteColor: mercerLightGray,
+          hourMinuteTextColor: mercerWhite,
+          entryModeIconColor: mercerMercerOrange,
+        )
+      ),
       home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
     ); 
