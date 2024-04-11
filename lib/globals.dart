@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 GlobalKey<ScaffoldMessengerState> rootScaffoldKey = GlobalKey<ScaffoldMessengerState>();
 GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
@@ -56,6 +57,8 @@ const double zoomLevelClose = 16.5;
 
 
 // Animation Stuff
+const Duration locationInfoTransitionInDuration = Duration(milliseconds: 500);
+const Duration locationInfoTransitionOutDuration = Duration(milliseconds: 150);
 const Duration trackLocationTimerDuration = Duration(milliseconds: 2000);
 const Duration trackDirectionTimerDuration = Duration(milliseconds: 3000);
 const Duration routeDrawingAnimationDuration = Duration(milliseconds: 1000);
@@ -80,4 +83,10 @@ class LoadingIndicator extends StatelessWidget {
       ),
     );
   }
+}
+
+
+late SharedPreferences prefs;
+Future<void> initSharedPreferences() async {
+  prefs = await SharedPreferences.getInstance();
 }

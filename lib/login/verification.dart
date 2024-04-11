@@ -35,7 +35,7 @@ class Verification extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back,
-            color: Colors.white,
+            color: mercerWhite,
             size: 30,
             ),
           onPressed: () {
@@ -63,7 +63,7 @@ class Verification extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 18.0,
-                  color: Colors.white),
+                  color: mercerWhite),
                 
               ),
 

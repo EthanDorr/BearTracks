@@ -1,18 +1,23 @@
 import 'dart:developer';
 
+
 import 'package:bear_tracks/login/student_login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 
 import 'package:bear_tracks/globals.dart';
 import 'package:bear_tracks/gps.dart';
 import 'package:bear_tracks/map.dart';
 
+
 class LoginScreen extends StatelessWidget {
   final bool _isLocationEnabled;
   final GPS _gps;
 
+
   const LoginScreen(this._gps, this._isLocationEnabled, {super.key});
+
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +53,7 @@ class LoginScreen extends StatelessWidget {
                 },
                 style: ButtonStyle(
                   padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 32), 
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
                   ),
                   backgroundColor: MaterialStateProperty.all<Color>(mercerMercerOrange),
                   shape: MaterialStateProperty.all<RoundedRectangleBorder>(

@@ -28,7 +28,7 @@ class PasswordResetScreen extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back,
-            color: Colors.white,
+            color: mercerWhite,
             size: 30,
             ),
           onPressed: () {
@@ -55,7 +55,7 @@ class PasswordResetScreen extends StatelessWidget {
                     child: Text(
                       'Reset Password',
                       style: GoogleFonts.poppins(
-                        color: Colors.white,
+                        color: mercerWhite,
                         fontSize: 35,
                         fontWeight: FontWeight.bold,
 
@@ -70,9 +70,9 @@ class PasswordResetScreen extends StatelessWidget {
                     controller: emailController,
                     decoration: InputDecoration(
                       hintText: 'Enter Mercer ID',
-                      hintStyle: const TextStyle(color: Colors.black),
+                      hintStyle: const TextStyle(color: mercerBlack),
                       filled: true,
-                      fillColor: Colors.white, 
+                      fillColor: mercerWhite, 
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none, 
@@ -80,7 +80,7 @@ class PasswordResetScreen extends StatelessWidget {
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
                     ),
                     style: const TextStyle(
-                      color: Colors.black,
+                      color: mercerBlack,
                       fontSize: 16,
                     ), 
                   ),
@@ -111,7 +111,7 @@ class PasswordResetScreen extends StatelessWidget {
                   child: const Text(
                     'Send Verification',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: mercerWhite,
                       fontSize: 18,
                     ),
                   ),
