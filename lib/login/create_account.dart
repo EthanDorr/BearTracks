@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:developer';
 
+import 'package:bear_tracks/gps.dart';
+import 'package:bear_tracks/login/verification.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -7,7 +10,11 @@ import 'package:bear_tracks/globals.dart';
 import 'package:bear_tracks/login/account_logic.dart';
 
 class CreateAccount extends StatelessWidget {
-  const CreateAccount({super.key});
+
+  final bool _isLocationEnabled;
+  final GPS _gps;
+  
+  const CreateAccount(this._gps, this._isLocationEnabled, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -64,9 +71,9 @@ class CreateAccount extends StatelessWidget {
                     controller: loginController,
                     decoration: InputDecoration(
                       hintText: 'Enter Mercer ID',
-                      hintStyle: const TextStyle(color: mercerBlack),
+                      hintStyle: const TextStyle(color: Colors.black),
                       filled: true,
-                      fillColor: mercerWhite, // Set background color to white
+                      fillColor: Colors.white, // Set background color to white
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none, // Hide the border
@@ -74,7 +81,7 @@ class CreateAccount extends StatelessWidget {
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Adjust the padding
                     ),
                     style: const TextStyle(
-                      color: mercerBlack,
+                      color: Colors.black,
                       fontSize: 16,
                     ), // Set text color to black
                   ),
@@ -87,9 +94,9 @@ class CreateAccount extends StatelessWidget {
                     obscureText: true,
                     decoration: InputDecoration(
                       hintText: 'Enter Password',
-                      hintStyle: const TextStyle(color: mercerBlack),
+                      hintStyle: const TextStyle(color: Colors.black),
                       filled: true,
-                      fillColor: mercerWhite, // Set background color to white
+                      fillColor: Colors.white, // Set background color to white
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none, // Hide the border
@@ -97,20 +104,25 @@ class CreateAccount extends StatelessWidget {
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Adjust the padding
                     ),
                     style: const TextStyle(
-                      color: mercerBlack,
+                      color: Colors.black,
                       fontSize: 16,
                     ), // Set text color to black
                   ),
                 ),
                 const SizedBox(height: 100),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: ()  {
                     log('Create Account pressed');
                     // Add your create account logic here
                     log('${loginController.text}@live.mercer.edu');
                     log(passwordController.text);
 
                     createUserWithEmailAndPassword('${loginController.text}@live.mercer.edu', passwordController.text);
+                    loginWithEmailAndPassword('${loginController.text}@live.mercer.edu', passwordController.text);
+                    Timer(const Duration(milliseconds: 300), (){});
+                    sendVerification();
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => Verification(_gps, _isLocationEnabled, verificationType: 'email',)));
+
                   },
                   style: ButtonStyle(
                     padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
@@ -126,7 +138,7 @@ class CreateAccount extends StatelessWidget {
                   child: const Text(
                     'Create Account',
                     style: TextStyle(
-                      color: mercerWhite,
+                      color: Colors.white,
                       fontSize: 18,
                     ),
                   ),
