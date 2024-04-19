@@ -97,28 +97,30 @@ class SplashImage extends StatelessWidget {
     return Scaffold(
       backgroundColor: mercerBlack,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            
-            Image.asset(
-              'assets/mercer-spirit-block.png',
-              width: 300,
-              height: 336,
-            ),
-        
-            Text(
-              'BearTracks',
-              style: GoogleFonts.caveat(
-                textStyle: const TextStyle(
-                  fontSize: 72,
-                  color: mercerMercerOrange,
-                  fontWeight: FontWeight.bold,
+        child: Transform.translate(
+          offset: const Offset(0, -20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Image.asset(
+                'assets/mercer-spirit-block.png',
+                width: 300,
+                height: 300,
+              ),
+              const SizedBox(height: 15),
+              Text(
+                'BearTracks',
+                style: GoogleFonts.caveat(
+                  textStyle: const TextStyle(
+                    fontSize: 72,
+                    color: mercerMercerOrange,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-
-          ],
+              const SizedBox(height: 145),
+            ],
+          ),
         ),
       ),
     );
