@@ -35,157 +35,157 @@ class StudentLoginScreenState extends State<StudentLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
     return Scaffold(
-      backgroundColor: mercerBlack, 
+      backgroundColor: mercerBlack,
       appBar: AppBar(
-        backgroundColor: Colors.transparent, 
+        backgroundColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back,
-            color: mercerWhite,
+            color: Colors.white,
             size: 30,
           ),
           onPressed: () {
             log('Back button pressed');
-            Navigator.pop(context); 
+            Navigator.pop(context);
           },
         ),
       ),
-
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 100, horizontal: 30), 
+      body: SingleChildScrollView(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-
+              SizedBox(
+                height: screenSize.height * 0.1,
+              ),
               Container(
-                width: double.infinity,
+                width: screenSize.width * 0.9,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: mercerMercerOrange, 
+                  color: mercerMercerOrange,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: FittedBox( // Changed from Center to FittedBox
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
                   child: Text(
                     'Student Login',
                     style: GoogleFonts.poppins(
-                      color: mercerWhite,
+                      color: Colors.white,
+                      fontSize: 45,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
-
-              const SizedBox(height: 110),
-
+              SizedBox(height: screenSize.height * 0.15),
               SizedBox(
-                width: 300, 
+                width: screenSize.width * 0.8,
                 child: TextField(
                   controller: _loginController,
                   decoration: InputDecoration(
                     hintText: 'MUID',
-                    hintStyle: const TextStyle(color: mercerBlack),
+                    hintStyle: const TextStyle(color: Colors.black),
                     filled: true,
-                    fillColor: mercerWhite, 
+                    fillColor: Colors.white,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none, 
+                      borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   style: const TextStyle(
-                    color: mercerBlack,
+                    color: Colors.black,
                     fontSize: 16,
-                  ), 
+                  ),
                 ),
               ),
-
-              const SizedBox(height: 20),
-
+              SizedBox(height: screenSize.height * 0.02),
               SizedBox(
-                width: 300, 
+                width: screenSize.width * 0.8,
                 child: TextField(
                   controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
                     hintText: 'Password',
-                    hintStyle: const TextStyle(color: mercerBlack),
+                    hintStyle: const TextStyle(color: Colors.black),
                     filled: true,
-                    fillColor: mercerWhite, 
+                    fillColor: Colors.white,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none, 
+                      borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   style: const TextStyle(
-                    color: mercerBlack,
+                    color: Colors.black,
                     fontSize: 16,
                   ),
                 ),
               ),
-
-              const SizedBox(height: 10),
-
+              SizedBox(height: screenSize.height * 0.01),
               GestureDetector(
-                onTap: () {
-                  log('Create Account pressed');
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateAccount()));
-                },
-                child: const Text(
-                  'New User? Create An Account',
-                  style: TextStyle(
-                    color: mercerWhite,
-                    fontSize: 14,
-                    decoration: TextDecoration.underline, 
-                    decorationColor: mercerWhite, 
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => CreateAccount(widget._gps, widget._isLocationEnabled))),
+                child: RichText(
+                  text: const TextSpan(
+                    text: 'New User? ',
+                    style: TextStyle(
+                      color: mercerWhite,
+                      fontSize: 18,
+                    ),
+                    children: <TextSpan>[
+                      TextSpan(
+                        text: 'Create An Account',
+                        style: TextStyle(
+                          decoration: TextDecoration.underline,
+                          decorationColor: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-
-              const SizedBox(height: 5),
-
+              SizedBox(height: screenSize.height * 0.02),
               GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) =>  PasswordResetScreen(widget._gps, widget._isLocationEnabled))),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => PasswordResetScreen(widget._gps, widget._isLocationEnabled))),
                 child: const Text(
                   'Forgot Password',
                   style: TextStyle(
-                    color: mercerWhite,
+                    color: Colors.white,
                     fontSize: 14,
-                    decoration: TextDecoration.underline, 
-                    decorationColor: mercerWhite, 
+                    decoration: TextDecoration.underline,
+                    decorationColor: Colors.white,
                   ),
                 ),
               ),
-
-              const SizedBox(height: 50),
-
+              SizedBox(height: screenSize.height * 0.1),
               ElevatedButton(
                 onPressed: () async {
                   final String email = '${_loginController.text}@live.mercer.edu';
                   final String password = _passwordController.text;
-      
+
                   log('Login pressed');
                   log(email);
                   log(password);
 
                   await loginWithEmailAndPassword(email, password);
-                  
+
                   final User? user = FirebaseAuth.instance.currentUser;
-      
+
                   if (user != null && context.mounted) {
                     Navigator.push(
                       context, MaterialPageRoute(
                         builder: (BuildContext context) {
                           return user.emailVerified
-                            ? MapScreen(true, widget._gps, widget._isLocationEnabled)
-                            : Verification(widget._gps, widget._isLocationEnabled, verificationType: 'email');
-                        }
-                      )
+                              ? MapScreen(true, widget._gps, widget._isLocationEnabled)
+                              : Verification(widget._gps, widget._isLocationEnabled, verificationType: 'email');
+                        },
+                      ),
                     );
-                  }
-                  else {
+                  } else {
                     //Say email or password is incorrect
                     printSnackBar(
                       'MUID or password is incorrect.',
@@ -195,7 +195,7 @@ class StudentLoginScreenState extends State<StudentLoginScreen> {
                 },
                 style: ButtonStyle(
                   padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 32), 
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
                   ),
                   backgroundColor: MaterialStateProperty.all<Color>(mercerMercerOrange),
                   shape: MaterialStateProperty.all<RoundedRectangleBorder>(
@@ -207,7 +207,7 @@ class StudentLoginScreenState extends State<StudentLoginScreen> {
                 child: const Text(
                   'Login',
                   style: TextStyle(
-                    color: mercerWhite,
+                    color: Colors.white,
                     fontSize: 18,
                   ),
                 ),
@@ -219,4 +219,3 @@ class StudentLoginScreenState extends State<StudentLoginScreen> {
     );
   }
 }
-
